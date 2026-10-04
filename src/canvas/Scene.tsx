@@ -57,17 +57,25 @@ const MIN_NAIL_PX = 3.6;
 /** Above this many edges the fibre texture is drawn only when zoomed in far enough to see it. */
 const DETAIL_EDGE_LIMIT = 600;
 
-/** View that fits the whole wall with padding. */
-export function fitView(size: Size, wall: Pick<Wall, 'width' | 'height'>): View {
+/**
+ * View that fits the whole wall with padding. `reserve` is the fraction of the height at the
+ * bottom that something else covers (the phone inspector sheet), so the wall fits above it.
+ */
+export function fitView(size: Size, wall: Pick<Wall, 'width' | 'height'>, reserve = 0): View {
   const pad = Math.max(24, Math.min(size.w, size.h) * 0.05);
   const W = Math.max(1e-6, wall.width);
   const H = Math.max(1e-6, wall.height);
-  const k = Math.max(1e-3, Math.min((size.w - 2 * pad) / W, (size.h - 2 * pad) / H));
-  return { k, x: W / 2 - size.w / (2 * k), y: H / 2 - size.h / (2 * k) };
+  const availH = size.h * (1 - Math.min(0.9, Math.max(0, reserve)));
+  const k = Math.max(1e-3, Math.min((size.w - 2 * pad) / W, (availH - 2 * pad) / H));
+  return { k, x: W / 2 - size.w / (2 * k), y: H / 2 - availH / (2 * k) };
 }
 
+/** Zoom steps for the +/- buttons and keys. */
+const ZOOM_STEP = 1.4;
+
 type Drag =
-  | { kind: 'pan'; sx: number; sy: number; v0: View }
+  | { kind: 'pan'; sx: number; sy: number; v0: View; tapClear?: boolean }
+  | { kind: 'pinch'; d0: number; m0: Vec2; v0: View }
   | { kind: 'nails'; ids: NailId[]; exclude: Set<NailId>; anchor: Vec2; start: Vec2; applied: Vec2; sx: number; sy: number; started: boolean }
   | { kind: 'pin'; id: PinId; edge: Edge; sx: number; sy: number; started: boolean }
   | { kind: 'lasso'; start: Vec2; sx: number; sy: number; shift: boolean; started: boolean };
@@ -126,6 +134,7 @@ export function Scene(props: SceneProps) {
     showNailLabels = false,
     snap,
     highlight,
+    viewReserve = 0,
     className,
   } = props;
   const { wall } = resolved;
@@ -138,8 +147,8 @@ export function Scene(props: SceneProps) {
   const [ui, setUi] = useState<Ui>(NO_UI);
   const [chain, setChain] = useState<NailId | null>(null);
   const [spaceDown, setSpaceDown] = useState(false);
-  const view = userView ?? fitView(size, wall);
-  const fitK = fitView(size, wall).k;
+  const view = userView ?? fitView(size, wall, viewReserve);
+  const fitK = fitView(size, wall, viewReserve).k;
   // Camera during a gesture: the SVG is moved with a cheap composited CSS transform and the
   // viewBox is committed once the gesture settles, so 2000-edge webs pan and zoom smoothly.
   const svgRef = useRef<SVGSVGElement>(null);
@@ -196,6 +205,8 @@ export function Scene(props: SceneProps) {
   latest.current = { view: camera, fitK, resolved, nails, edgesById, selection, tool, actions, snap, activeGroupId, chain, units, photoSize };
   const drag = useRef<Drag | null>(null);
   const hovering = useRef(false);
+  /** Touch pointers currently down (client coordinates): two of them make a pinch/pan gesture. */
+  const touches = useRef(new Map<number, Vec2>());
 
   // Switching to Build can unmount the canvas during a drag. Never leave history paused.
   useEffect(() => () => {
@@ -259,10 +270,25 @@ export function Scene(props: SceneProps) {
   const fit = () => {
     clearTimeout(commitTimer.current);
     live.current = null;
-    latest.current.view = fitView(size, wall);
+    latest.current.view = fitView(size, wall, viewReserve);
     syncTransform();
     setUserView(null);
   };
+
+  /** Zoom by `factor` about the middle of the visible area (above any covering sheet). */
+  const zoomBy = (factor: number) => {
+    const { view: v, fitK: fk } = latest.current;
+    const cx = size.w / 2;
+    const cy = (size.h * (1 - viewReserve)) / 2;
+    const k2 = clamp(v.k * factor, fk * 0.2, fk * 60);
+    const wx = v.x + cx / v.k;
+    const wy = v.y + cy / v.k;
+    moveCamera({ k: k2, x: wx - cx / k2, y: wy - cy / k2 }, 120);
+  };
+  const zoomRef = useRef(zoomBy);
+  zoomRef.current = zoomBy;
+  const fitRef = useRef(fit);
+  fitRef.current = fit;
 
   // ── wheel zoom (native, non-passive so the page doesn't scroll) ──
   useEffect(() => {
@@ -299,6 +325,23 @@ export function Scene(props: SceneProps) {
         e.preventDefault();
         setSpaceDown(true);
         return;
+      }
+      if (!e.ctrlKey && !e.metaKey && !e.altKey) {
+        if (e.key === '+' || e.key === '=') {
+          e.preventDefault();
+          zoomRef.current(ZOOM_STEP);
+          return;
+        }
+        if (e.key === '-' || e.key === '_') {
+          e.preventDefault();
+          zoomRef.current(1 / ZOOM_STEP);
+          return;
+        }
+        if (e.key === '0') {
+          e.preventDefault();
+          fitRef.current();
+          return;
+        }
       }
       if (!L.actions) return;
       if (e.key === 'Escape') {
@@ -364,9 +407,29 @@ export function Scene(props: SceneProps) {
   };
 
   // ── pointer handlers ─────────────────────────────────
+  const pinchState = () => {
+    const [a, b] = [...touches.current.values()];
+    const r = rootRef.current!.getBoundingClientRect();
+    return { dist: Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)), mid: { x: (a.x + b.x) / 2 - r.left, y: (a.y + b.y) / 2 - r.top } };
+  };
+
   const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
     const L = latest.current;
     rootRef.current?.focus({ preventScroll: true });
+    if (e.pointerType === 'touch') {
+      touches.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (touches.current.size === 2) {
+        // A second finger turns whatever the first one started into a pinch-zoom + pan.
+        const d = drag.current;
+        if (d && (d.kind === 'nails' || d.kind === 'pin') && d.started) L.actions?.endGesture();
+        setUi((u) => ({ ...u, lasso: null, guideX: null, guideY: null }));
+        const { dist, mid } = pinchState();
+        drag.current = { kind: 'pinch', d0: dist, m0: mid, v0: L.view };
+        e.preventDefault();
+        return;
+      }
+      if (touches.current.size > 2) return;
+    }
     if (e.button === 1 || (e.button === 0 && (spaceDown || L.tool === 'pan' || !L.actions))) {
       e.preventDefault();
       capture(e);
@@ -427,6 +490,13 @@ export function Scene(props: SceneProps) {
           else A.setSelection({ nails: [], edges: [hit.edge.id], pins: [] });
           return;
         }
+        if (e.pointerType === 'touch') {
+          // No lasso on a phone: dragging empty wall pans it, and a tap on empty wall deselects.
+          capture(e);
+          drag.current = { kind: 'pan', sx: e.clientX, sy: e.clientY, v0: L.view, tapClear: !e.shiftKey };
+          setUi((u) => ({ ...u, panning: true }));
+          return;
+        }
         drag.current = { kind: 'lasso', start: p, sx: e.clientX, sy: e.clientY, shift: e.shiftKey, started: false };
         return;
       }
@@ -457,6 +527,18 @@ export function Scene(props: SceneProps) {
     const p = toWall(e);
     const moved = d && 'sx' in d ? Math.hypot(e.clientX - d.sx, e.clientY - d.sy) : 0;
 
+    if (e.pointerType === 'touch' && touches.current.has(e.pointerId)) {
+      touches.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (d?.kind === 'pinch' && touches.current.size >= 2) {
+        const { dist, mid } = pinchState();
+        const k2 = clamp(d.v0.k * (dist / d.d0), L.fitK * 0.2, L.fitK * 60);
+        const wx = d.v0.x + d.m0.x / d.v0.k;
+        const wy = d.v0.y + d.m0.y / d.v0.k;
+        moveCamera({ k: k2, x: wx - mid.x / k2, y: wy - mid.y / k2 });
+        return;
+      }
+    }
+    if (d?.kind === 'pinch') return;
     if (d?.kind === 'pan') {
       moveCamera({ k: d.v0.k, x: d.v0.x - (e.clientX - d.sx) / d.v0.k, y: d.v0.y - (e.clientY - d.sy) / d.v0.k });
       return;
@@ -531,12 +613,23 @@ export function Scene(props: SceneProps) {
   const onPointerUp = (e: ReactPointerEvent<HTMLDivElement>) => {
     const L = latest.current;
     const d = drag.current;
+    if (e.pointerType === 'touch') touches.current.delete(e.pointerId);
+    if (d?.kind === 'pinch') {
+      // Stay in the gesture until the last finger lifts, so a leftover finger doesn't select or pan.
+      if (touches.current.size === 0) {
+        drag.current = null;
+        commit();
+        setUi((u) => (u.panning ? { ...u, panning: false } : u));
+      }
+      return;
+    }
     drag.current = null;
     if (!d) return;
     const A = L.actions;
     if (d.kind === 'pan') {
       commit();
       setUi((u) => ({ ...u, panning: false }));
+      if (d.tapClear && e.type === 'pointerup' && Math.hypot(e.clientX - d.sx, e.clientY - d.sy) < DRAG_THRESHOLD) A?.clearSelection();
       return;
     }
     if (!A) return;
@@ -741,19 +834,33 @@ export function Scene(props: SceneProps) {
           )}
         </g>
       </svg>
-      <span className={s.zoomLabel}>{Math.round((view.k / fitK) * 100)}%</span>
-      <button
-        type="button"
-        className={s.fit}
-        title="Fit wall to view"
+      <div
+        className={s.zoomBar}
+        role="group"
+        aria-label="Zoom"
+        // Keep presses on the controls away from the canvas gestures underneath.
         onPointerDown={(e) => e.stopPropagation()}
-        onClick={fit}
+        onPointerUp={(e) => e.stopPropagation()}
+        onPointerMove={(e) => e.stopPropagation()}
+        onWheel={(e) => e.stopPropagation()}
       >
-        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
-          <path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4" />
-        </svg>
-        Fit
-      </button>
+        <button type="button" className={s.zoomBtn} title="Zoom in (+)" aria-label="Zoom in" onClick={() => zoomBy(ZOOM_STEP)}>
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+            <path d="M8 3v10M3 8h10" />
+          </svg>
+        </button>
+        <button type="button" className={s.zoomBtn} title="Zoom out (−)" aria-label="Zoom out" onClick={() => zoomBy(1 / ZOOM_STEP)}>
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+            <path d="M3 8h10" />
+          </svg>
+        </button>
+        <button type="button" className={s.zoomBtn} title="Fit wall to view (0)" aria-label="Fit wall to view" onClick={fit}>
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
+            <path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4" />
+          </svg>
+        </button>
+        <span className={s.zoomLabel}>{Math.round((view.k / fitK) * 100)}%</span>
+      </div>
     </div>
   );
 }

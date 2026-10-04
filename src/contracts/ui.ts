@@ -55,6 +55,8 @@ export interface SceneProps {
   snap?: SnapOptions;
   /** Edge/nail ids to emphasise (e.g. current walkthrough step). */
   highlight?: { nails?: string[]; edges?: string[] };
+  /** Fraction (0..0.9) of the height, at the bottom, covered by other UI such as the phone inspector sheet; "fit" keeps the wall above it. */
+  viewReserve?: number;
   className?: string;
 }
 

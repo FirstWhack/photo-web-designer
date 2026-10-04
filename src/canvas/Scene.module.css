@@ -222,31 +222,51 @@
 .needle { fill: var(--accent); stroke: #fff; stroke-width: 1.5; }
 
 /* ── floating controls ────────────────────────────── */
-.fit {
+.zoomBar {
   position: absolute;
+  top: 12px;
   right: 12px;
-  bottom: 12px;
-  display: inline-flex;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
+  gap: 4px;
+  padding: 4px;
   border: 1px solid var(--border);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface) 90%, transparent);
   backdrop-filter: blur(6px);
   box-shadow: var(--shadow);
-  color: var(--text-muted);
-  font-size: 12px;
+  touch-action: manipulation;
+}
+@media (max-width: 899px) {
+  /* Below the drawer toggles in the app's top-right corner. */
+  .zoomBar { top: 56px; right: 10px; }
+}
+.zoomBtn {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
   cursor: pointer;
 }
-.fit:hover { color: var(--text); border-color: var(--text-muted); }
-.fit svg { width: 14px; height: 14px; }
+.zoomBtn:hover { background: var(--surface-hover); }
+.zoomBtn:active { background: var(--surface-sunken); }
+.zoomBtn:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.zoomBtn svg { width: 16px; height: 16px; }
+@media (pointer: coarse) {
+  .zoomBtn { width: 44px; height: 44px; }
+  .zoomBtn svg { width: 20px; height: 20px; }
+}
 .zoomLabel {
-  position: absolute;
-  left: 12px;
-  bottom: 12px;
   font-size: 11px;
+  font-variant-numeric: tabular-nums;
   color: var(--text-muted);
+  padding-bottom: 2px;
   pointer-events: none;
-  opacity: 0.8;
 }

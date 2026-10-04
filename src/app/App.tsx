@@ -663,6 +663,7 @@ export function App({ store: injected, registry = defaultRegistry }: AppProps) {
                 showNailLabels={mode === 'refine' && labels}
                 snap={mode === 'refine' ? snap : undefined}
                 highlight={highlight}
+                viewReserve={narrow && drawer === 'right' ? 0.56 : 0}
               />
               {empty && mode === 'explore' && (
                 <EmptyState
