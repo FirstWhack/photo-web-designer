@@ -93,6 +93,16 @@ export function textWidth(s: string, size: number, bold = false): number {
 
 const capH = (size: number) => size * 0.72;
 
+/** Pale twine prints faintly: darken light colours for the drawing only. */
+export function inkColor(css: string): string {
+  const m = /^#([0-9a-f]{6})$/i.exec(css.trim());
+  if (!m) return css;
+  const c = [0, 2, 4].map((i) => parseInt(m[1].slice(i, i + 2), 16));
+  const lum = (0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]) / 255;
+  const f = lum > 0.45 ? Math.min(0.62, (lum - 0.3) * 1.1) : 0;
+  return '#' + c.map((v) => Math.round(v * (1 - f)).toString(16).padStart(2, '0')).join('');
+}
+
 function truncate(s: string, size: number, maxW: number, bold = false): string {
   if (textWidth(s, size, bold) <= maxW) return s;
   let t = s;
@@ -169,6 +179,19 @@ class Ink {
   text(x: number, y: number, text: string, size: number, o: { anchor?: Anchor; rotate?: -90; bold?: boolean; color?: string } = {}) {
     this.items.push({ kind: 'text', x: r2(x), y: r2(y), text, size, ...o });
   }
+  /** Text on a white backing, so lines drawn earlier can't strike through it. */
+  label(x: number, y: number, text: string, size: number, o: { anchor?: Anchor; rotate?: -90; bold?: boolean } = {}) {
+    const w = textWidth(text, size, o.bold) + 0.8;
+    const h = capH(size) + 0.8;
+    if (o.rotate) {
+      const y0 = o.anchor === 'middle' ? y - w / 2 : o.anchor === 'end' ? y - w : y - w + 0.4;
+      this.rect(x - capH(size) - 0.4, y0, h, w, 0, { fill: '#fff' });
+    } else {
+      const x0 = o.anchor === 'middle' ? x - w / 2 : o.anchor === 'end' ? x - w : x - 0.4;
+      this.rect(x0, y - capH(size) - 0.4, w, h, 0, { fill: '#fff' });
+    }
+    this.text(x, y, text, size, o);
+  }
   /** 45° architectural tick at (x, y). */
   tick(x: number, y: number) {
     this.line(x - 0.8, y + 0.8, x + 0.8, y - 0.8, 0.3);
@@ -179,10 +202,10 @@ class Ink {
 
 const B = 7; // border inset
 const P = 11; // content inset
-const DIM = 2.2;
-const TAB = 2.1;
-const HEAD = 2.8;
-const RH = 3.3; // schedule row height
+const DIM = 2.8;
+const TAB = 2.5;
+const HEAD = 3.2;
+const RH = 4; // schedule row height
 const EXT_GAP = 3.5; // gap between the wall and the start of extension lines
 const TB_H = 43;
 const NAILS_ON_SHEET_1 = 60;
@@ -239,7 +262,7 @@ export function buildPlanDrawing(resolved: ResolvedDesign, plan: BuildPlan, opts
   const fromBottom = origin.startsWith('bottom');
 
   // ── sheet regions ──
-  const colW = clamp(W * 0.29, 82, 128);
+  const colW = clamp(W * 0.31, 90, 136);
   const colX1 = W - P;
   const colX0 = colX1 - colW;
   const field = { x: P, y: P, w: colX0 - 8 - P, h: H - 2 * P };
@@ -285,7 +308,7 @@ export function buildPlanDrawing(resolved: ResolvedDesign, plan: BuildPlan, opts
       pts.push(...(pts.length ? seg.slice(1) : seg));
     }
     if (pts.length > 1) {
-      ink.poly(pts, dense ? 0.16 : 0.3, { color: groupById.get(run.groupId)?.color ?? '#777', dash: RUN_DASHES[i % RUN_DASHES.length] });
+      ink.poly(pts, dense ? 0.16 : 0.3, { color: inkColor(groupById.get(run.groupId)?.color ?? '#777'), dash: RUN_DASHES[i % RUN_DASHES.length] });
     }
   });
 
@@ -303,8 +326,9 @@ export function buildPlanDrawing(resolved: ResolvedDesign, plan: BuildPlan, opts
   // ── datum ──
   const dpt = { x: fromRight ? wx + wallW : wx, y: fromBottom ? wy + wallH : wy };
   {
-    const R = 2;
+    const R = 1.7;
     ink.circle(dpt.x, dpt.y, R, 0.25, { stroke: INK, fill: '#fff' });
+    occ.add({ x0: dpt.x - R, y0: dpt.y - R, x1: dpt.x + R, y1: dpt.y + R });
     for (const a0 of [0, Math.PI]) {
       const arc: Vec2[] = [{ x: dpt.x, y: dpt.y }];
       for (let i = 0; i <= 8; i++) {
@@ -315,7 +339,7 @@ export function buildPlanDrawing(resolved: ResolvedDesign, plan: BuildPlan, opts
     }
     const sx = fromRight ? 1 : -1;
     const sy = fromBottom ? 1 : -1;
-    ink.text(dpt.x + sx * 3, dpt.y + sy * 3 + (sy > 0 ? capH(2.4) : 0), 'DATUM', 2.4, {
+    ink.label(dpt.x + sx * 3, dpt.y + sy * 3 + (sy > 0 ? capH(3) : 0), 'DATUM', 3, {
       bold: true,
       anchor: sx < 0 ? 'end' : 'start',
     });
@@ -329,7 +353,16 @@ export function buildPlanDrawing(resolved: ResolvedDesign, plan: BuildPlan, opts
     for (let i = 0; i < nailPts.length; i++)
       for (let j = i + 1; j < nailPts.length; j++) minD = Math.min(minD, dist(nailPts[i], nailPts[j]) || Infinity);
   }
-  const nr = clamp(Number.isFinite(minD) ? minD * 0.38 : 1.1, 0.45, 1.1);
+  const nr = clamp(Number.isFinite(minD) ? minD * 0.38 : 1.3, 0.45, 1.3);
+  // Keep nail numbers and tags off the wall outline and the centre lines.
+  const T = 0.7;
+  for (const b of [
+    { x0: wx - T, y0: wy - T, x1: wx + wallW + T, y1: wy + T },
+    { x0: wx - T, y0: wy + wallH - T, x1: wx + wallW + T, y1: wy + wallH + T },
+    { x0: wx - T, y0: wy - T, x1: wx + T, y1: wy + wallH + T },
+    { x0: wx + wallW - T, y0: wy - T, x1: wx + wallW + T, y1: wy + wallH + T },
+  ])
+    occ.add(b);
   for (const n of nailPts) {
     ink.circle(n.x, n.y, nr, 0.18, { stroke: INK, fill: '#fff' });
     ink.line(n.x - nr * 1.6, n.y, n.x + nr * 1.6, n.y, 0.13);
@@ -342,7 +375,7 @@ export function buildPlanDrawing(resolved: ResolvedDesign, plan: BuildPlan, opts
     [-1, -1], [1, -1], [-1, 1], [1, 1], [-1, 0], [1, 0], [0, -1], [0, 1],
   ];
   const tags: PlanDrawing['tags'] = [];
-  const TR = 1.8;
+  const TR = 2.2;
   plan.runs.forEach((run, i) => {
     const first = run.steps[0];
     const s = nailById.get(run.nails[0]);
@@ -398,13 +431,13 @@ export function buildPlanDrawing(resolved: ResolvedDesign, plan: BuildPlan, opts
     }
     ink.circle(at.x, at.y, TR, 0.25, { stroke: INK, fill: '#fff' });
     const letter = runLetters[i];
-    const ts = letter.length > 1 ? 1.6 : 2.1;
+    const ts = letter.length > 1 ? 1.9 : 2.5;
     ink.text(at.x, at.y + capH(ts) / 2, letter, ts, { anchor: 'middle', bold: true });
     tags.push({ runId: run.id, letter, x: r2(at.x), y: r2(at.y) });
   });
 
   // ── nail numbers ──
-  const NS = nailPts.length > 120 ? 1.6 : nailPts.length > 50 ? 1.8 : 2.0;
+  const NS = nailPts.length > 120 ? 1.9 : nailPts.length > 50 ? 2.3 : 2.7;
   const nailsOut: PlanDrawing['nails'] = [];
   for (const n of [...nailPts].sort((a, b) => Number(a.label) - Number(b.label))) {
     const tw = textWidth(n.label, NS);
@@ -425,7 +458,7 @@ export function buildPlanDrawing(resolved: ResolvedDesign, plan: BuildPlan, opts
     }
     if (placed) {
       occ.add(placed);
-      ink.text(placed.x0 + 0.15, placed.y1 - 0.15, n.label, NS);
+      ink.label(placed.x0 + 0.15, placed.y1 - 0.15, n.label, NS);
     }
     nailsOut.push({ id: n.id, label: n.label, x: r2(n.x), y: r2(n.y), labelled: !!placed });
   }
@@ -463,8 +496,8 @@ export function buildPlanDrawing(resolved: ResolvedDesign, plan: BuildPlan, opts
   const colBottom = tb.y0 - 4;
   // Notes (bottom of the column).
   const notes = NOTE_TEXT(units, origin);
-  const noteLines = notes.map((n) => wrap(n, TAB, colW - 5));
-  const notesH = 5 + noteLines.reduce((s, l) => s + l.length * 2.9 + 0.8, 0);
+  const noteLines = notes.map((n) => wrap(n, TAB, colW - 5.5));
+  const notesH = 5 + noteLines.reduce((s, l) => s + l.length * 3.4 + 1, 0);
   // Bill of materials.
   const nailCount = resolved.nails.length;
   const spares = nailSpares(nailCount);
@@ -533,10 +566,10 @@ export function buildPlanDrawing(resolved: ResolvedDesign, plan: BuildPlan, opts
     noteLines.forEach((lines, i) => {
       ink.text(colX0, y, `${i + 1}.`, TAB);
       lines.forEach((l) => {
-        ink.text(colX0 + 4, y, l, TAB);
-        y += 2.9;
+        ink.text(colX0 + 4.5, y, l, TAB);
+        y += 3.4;
       });
-      y += 0.8;
+      y += 1;
     });
   }
 
@@ -611,8 +644,8 @@ function drawAxis(ink: Ink, axis: 'x' | 'y', d: AxisDims, P: (v: number) => numb
   const ext = (a: number, to: number) => L(a, ext0, a, to - 1.2, 0.13);
   const along = (text: string, a: number, c: number, size = DIM) =>
     axis === 'x'
-      ? ink.text(a, c - 0.9, text, size, { anchor: 'middle' })
-      : ink.text(c - 0.9, a, text, size, { anchor: 'middle', rotate: -90 });
+      ? ink.label(a, c - 1.7, text, size, { anchor: 'middle' })
+      : ink.label(c - 1.7, a, text, size, { anchor: 'middle', rotate: -90 });
 
   // Extension lines: each position goes out to the outermost tier it appears on.
   const reach = new Map<number, number>();
@@ -640,8 +673,8 @@ function drawAxis(ink: Ink, axis: 'x' | 'y', d: AxisDims, P: (v: number) => numb
       let prev = -Infinity;
       for (const q of lines) if (q < s - 1e-6) prev = q;
       if (s - prev < minSp) continue;
-      if (axis === 'x') ink.text(s - 0.6, runT - 1, r.text, DIM, { rotate: -90 });
-      else ink.text(runT - 1, s - 0.6, r.text, DIM, { anchor: 'end' });
+      if (axis === 'x') ink.label(s - 0.6, runT - 1.4, r.text, DIM, { rotate: -90 });
+      else ink.label(runT - 1.4, s - 0.6, r.text, DIM, { anchor: 'end' });
     }
   }
 
@@ -723,7 +756,7 @@ function twineTable(ink: Ink, rows: RunRow[], x: number, y: number, w: number, t
   const top = y + 5;
   const cPc = 6.5;
   const cLine = 9;
-  const cName = Math.min(w * 0.3, Math.max(textWidth('TWINE', TAB, true), ...rows.map((r) => textWidth(r.name, TAB))) + 5);
+  const cName = Math.min(w * 0.4, Math.max(textWidth('TWINE', TAB, true), ...rows.map((r) => textWidth(r.name, TAB))) + 5);
   const cCut = Math.max(textWidth('CUT', TAB, true), ...rows.map((r) => textWidth(r.cut, TAB))) + 3;
   const cRoute = w - cPc - cLine - cName - cCut;
   const xs = [x, x + cPc, x + cPc + cLine, x + cPc + cLine + cName, x + w - cCut, x + w];
