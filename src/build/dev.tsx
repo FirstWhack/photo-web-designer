@@ -8,12 +8,17 @@ import { CutList } from './CutList';
 import { Walkthrough } from './Walkthrough';
 import { devPlan } from './devPlan';
 import { exportTemplatePdf, templateLayout } from './pdf';
+import { PlanSheet } from './PlanSheet';
+import type { PlanPaper } from './drawing';
+import { denseFixture } from './devDense';
 
-type Key = 'triangle' | 'plus' | 'spider';
+type Key = 'triangle' | 'plus' | 'spider' | 'dense';
+const dense = denseFixture();
 const FIXTURES: Record<Key, { resolved: ResolvedDesign; plan: BuildPlan; report?: Report }> = {
   triangle: { resolved: triangle, plan: trianglePlan, report: triangleReport },
   plus: { resolved: plus, plan: plusPlan },
   spider: { resolved: spider, plan: devPlan(spider) },
+  dense: { resolved: dense, plan: devPlan(dense) },
 };
 const ORIGINS: MeasureOrigin[] = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
 
@@ -34,6 +39,7 @@ export default function BuildDev() {
   const [paper, setPaper] = useState<TemplatePdfOptions['paper']>('letter');
   const [origin, setOrigin] = useState<MeasureOrigin>('top-left');
   const [busy, setBusy] = useState(false);
+  const [sheetPaper, setSheetPaper] = useState<PlanPaper>('tabloid');
   const f = FIXTURES[key];
   const opts: TemplatePdfOptions = { paper, margin: 10, origin, title: `${key} fixture` };
   const layout = useMemo(() => templateLayout(f.resolved, { paper, margin: 10, origin }), [f, paper, origin]);
@@ -99,6 +105,15 @@ export default function BuildDev() {
           {layout.pageCount} pages ({layout.layout.rows}×{layout.layout.cols} {layout.layout.orientation} tiles)
         </span>
       </div>
+      <label>
+        Drawing paper{' '}
+        <select value={sheetPaper} onChange={(e) => setSheetPaper(e.target.value as PlanPaper)}>
+          {(['tabloid', 'a3', 'letter', 'a4'] as const).map((p) => (
+            <option key={p}>{p}</option>
+          ))}
+        </select>
+      </label>
+      <PlanSheet resolved={f.resolved} plan={f.plan} report={f.report} origin={origin} title={`${key} fixture`} paper={sheetPaper} />
       {previewUrl && (
         <iframe title="Template preview" src={previewUrl} style={{ width: '100%', height: '80vh', border: '1px solid var(--border)' }} />
       )}

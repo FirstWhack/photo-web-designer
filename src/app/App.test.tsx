@@ -68,6 +68,18 @@ describe('App', { timeout: 30_000 }, () => {
     expect(layer.transform.scaleY * 2).toBe(24);
   });
 
+  it('Build mode opens on the Drawing tab', async () => {
+    const store = makeStore();
+    render(<App store={store} />);
+    await act(async () => fireEvent.click(surpriseButton()));
+    await act(async () => fireEvent.click(screen.getByRole('tab', { name: 'Build' })));
+    const tabs = screen.getAllByRole('tab').filter((t) => t.closest('[aria-label="Build guides"]'));
+    expect(tabs.map((t) => t.textContent)).toEqual(['Drawing', 'Cut & shop', 'Nail positions', 'Paper template (1:1)', 'Step-by-step (optional)']);
+    expect(screen.getByRole('tab', { name: 'Drawing' }).getAttribute('aria-selected')).toBe('true');
+    expect(screen.getByTestId('plan-sheet')).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Download drawing PDF/ })).toBeTruthy();
+  });
+
   it('Refine mode switches tools with keyboard shortcuts', async () => {
     render(<App store={makeStore()} />);
     await act(async () => fireEvent.click(screen.getByRole('tab', { name: 'Refine' })));

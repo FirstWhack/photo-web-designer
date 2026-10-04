@@ -2,13 +2,27 @@ import { useEffect, useMemo, useState } from 'react';
 import type { ResolvedDesign } from '@/contracts/design';
 import type { BuildPlan, Report } from '@/contracts/plan';
 import type { MeasureOrigin, TemplatePdfOptions } from '@/contracts/ui';
-import { CoordTable, CutList, Walkthrough, exportTemplatePdf, templateLayout } from '@/build';
+import {
+  CoordTable,
+  CutList,
+  PAPER_LABEL,
+  PlanSheet,
+  Walkthrough,
+  exportPlanPdf,
+  exportTemplatePdf,
+  templateLayout,
+  type PlanPaper,
+} from '@/build';
 import { Scene } from '@/canvas';
 import { Button, Field, Note, Segmented, Tabs, Icon } from '@/panels';
 import { downloadBlob, planHash, slug, walkHighlight, walkScreens } from './util';
 import s from './App.module.css';
 
-export type BuildTab = 'walk' | 'cut' | 'coords' | 'template';
+export type BuildTab = 'drawing' | 'cut' | 'coords' | 'template' | 'walk';
+
+const DRAW_PAPERS: PlanPaper[] = ['tabloid', 'a3', 'letter', 'a4'];
+const ZOOMS = ['1', '1.5', '2', '3'] as const;
+type Zoom = (typeof ZOOMS)[number];
 
 const ORIGINS: { value: MeasureOrigin; label: string }[] = [
   { value: 'top-left', label: 'Top left' },
@@ -55,6 +69,8 @@ export function BuildView({
 }) {
   const [origin, setOrigin] = useState<MeasureOrigin>('top-left');
   const [paper, setPaper] = useState<TemplatePdfOptions['paper']>('letter');
+  const [drawPaper, setDrawPaper] = useState<PlanPaper>('tabloid');
+  const [zoom, setZoom] = useState<Zoom>('1');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const storageKey = `photo-web:walk:${createdAt}:${planHash(plan)}`;
@@ -87,20 +103,36 @@ export function BuildView({
     }
   };
 
+  const downloadDrawing = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      const blob = await exportPlanPdf(resolved, plan, { paper: drawPaper, origin, title: designName, report });
+      downloadBlob(blob, `${slug(designName)}-drawing-${drawPaper}.pdf`);
+    } catch (e) {
+      setError((e as Error).message || 'Could not build the PDF');
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const empty = plan.runs.length === 0 && resolved.nails.length === 0;
+  // The drawing already shows the whole design; give it the full width.
+  const sceneShown = showScene && tab !== 'drawing';
 
   return (
-    <div className={s.buildLayout} data-scene={showScene || undefined}>
+    <div className={s.buildLayout} data-scene={sceneShown || undefined}>
       <div className={s.buildMain}>
         <Tabs<BuildTab>
           label="Build guides"
           value={tab}
           onChange={onTab}
           tabs={[
-            { value: 'walk', label: 'Walkthrough', icon: 'steps' },
+            { value: 'drawing', label: 'Drawing', icon: 'frame' },
             { value: 'cut', label: 'Cut & shop', icon: 'scissors' },
             { value: 'coords', label: 'Nail positions', icon: 'ruler' },
-            { value: 'template', label: 'Paper template', icon: 'printer' },
+            { value: 'template', label: 'Paper template (1:1)', icon: 'printer' },
+            { value: 'walk', label: 'Step-by-step (optional)', icon: 'steps' },
           ]}
         />
         <div className={s.buildContent}>
@@ -108,6 +140,39 @@ export function BuildView({
             <div className={s.buildEmpty}>
               <Icon name="nail" size={28} />
               <p>Nothing to build yet. Design a web in Explore or Refine, then come back for step-by-step instructions.</p>
+            </div>
+          ) : tab === 'drawing' ? (
+            <div className={s.drawingTab}>
+              <div className={s.drawingBar}>
+                <Field label="Paper">
+                  <Segmented
+                    label="Drawing paper"
+                    value={drawPaper}
+                    options={DRAW_PAPERS.map((p) => ({ value: p, label: PAPER_LABEL[p] }))}
+                    onChange={setDrawPaper}
+                  />
+                </Field>
+                <Field label="Datum (measure from)">
+                  <Segmented label="Drawing datum" value={origin} options={ORIGINS} onChange={setOrigin} />
+                </Field>
+                <Field label="Zoom">
+                  <Segmented
+                    label="Drawing zoom"
+                    value={zoom}
+                    options={ZOOMS.map((z) => ({ value: z, label: z === '1' ? 'Fit' : `${z}×` }))}
+                    onChange={setZoom}
+                  />
+                </Field>
+                <Button variant="primary" icon="download" onClick={downloadDrawing} disabled={busy}>
+                  {busy ? 'Building PDF…' : 'Download drawing PDF'}
+                </Button>
+              </div>
+              {error && <Note tone="warn">{error}</Note>}
+              <div className={s.drawingScroll} data-testid="drawing-scroll">
+                <div style={{ width: `${Number(zoom) * 100}%` }}>
+                  <PlanSheet resolved={resolved} plan={plan} report={report} origin={origin} title={designName} paper={drawPaper} />
+                </div>
+              </div>
             </div>
           ) : tab === 'walk' ? (
             <Walkthrough resolved={resolved} plan={plan} storageKey={storageKey} />
@@ -168,7 +233,7 @@ export function BuildView({
           )}
         </div>
       </div>
-      {showScene && !empty && (
+      {sceneShown && !empty && (
         <div className={s.buildScene} aria-label="Design preview">
           <Scene
             resolved={resolved}
