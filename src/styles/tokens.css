@@ -1,0 +1,42 @@
+/* Shared design tokens (orchestrator-owned). Domains use CSS modules referencing these vars. */
+:root {
+  --bg: #f6f2ea;
+  --surface: #fffdf8;
+  --surface-2: #efe8db;
+  --border: #ddd3c2;
+  --text: #2b2620;
+  --text-muted: #7a6f60;
+  --accent: #b5523b;
+  --accent-2: #3f6e8c;
+  --ok: #5a8a5e;
+  --warn: #d49a2a;
+  --error: #b83a3a;
+  --wall: #f4efe6;
+  --wall-grid: rgba(60, 50, 40, 0.08);
+  --nail: #6b6258;
+  --radius: 10px;
+  --shadow: 0 1px 2px rgba(40, 30, 20, 0.08), 0 4px 16px rgba(40, 30, 20, 0.06);
+  --font: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-hand: 'Caveat', 'Segoe Print', cursive;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1c1a17;
+    --surface: #24211d;
+    --surface-2: #2e2a25;
+    --border: #3d372f;
+    --text: #efe8dc;
+    --text-muted: #a69b8b;
+    --wall: #2a2622;
+    --wall-grid: rgba(255, 240, 220, 0.06);
+    --nail: #b8ad9e;
+    color-scheme: dark;
+  }
+}
+
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; margin: 0; }
+body { background: var(--bg); color: var(--text); font: 14px/1.4 var(--font); }
+button, input, select { font: inherit; color: inherit; }
