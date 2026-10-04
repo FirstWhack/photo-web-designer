@@ -122,9 +122,10 @@
   fill: none;
   stroke-linecap: round;
   stroke-width: calc(var(--tw) * 1px + var(--upx) * var(--hw, 9) * 1px);
-  opacity: 0.38;
+  opacity: 0.85;
 }
-.haloDot { opacity: 0.32; }
+/* Crisp ring around a flagged nail; a translucent disc turns to mud where nails cluster. */
+.haloDot { fill: none; stroke-width: 2px; vector-effect: non-scaling-stroke; opacity: 0.95; }
 .haloDotScale { transform: scale(calc(var(--nr) + var(--upx) * var(--hr, 7))); }
 .glow {
   fill: none;

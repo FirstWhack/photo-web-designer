@@ -266,15 +266,15 @@ export const IssueHalos = memo(function IssueHalos({
       {[...edgeSev].map(([id, sev]) => {
         const d = paths.get(id);
         return d ? (
-          <path key={id} className={s.halo} d={d} data-issue-edge={id} style={{ stroke: SEVERITY_COLOR[sev], '--tw': edgeTw(id), '--hw': 11 } as Vars} />
+          <path key={id} className={s.halo} d={d} data-issue-edge={id} style={{ stroke: SEVERITY_COLOR[sev], '--tw': edgeTw(id), '--hw': 3 } as Vars} />
         ) : null;
       })}
       {[...nailSev].map(([id, sev]) => {
         const n = nails.get(id);
         return n ? (
           <g key={id} transform={`translate(${n.x} ${n.y})`} data-issue-nail={id}>
-            <g className={s.haloDotScale} style={{ '--hr': 9 } as Vars}>
-              <circle r={1} className={s.haloDot} style={{ fill: SEVERITY_COLOR[sev] }} />
+            <g className={s.haloDotScale} style={{ '--hr': 5 } as Vars}>
+              <circle r={1} className={s.haloDot} style={{ stroke: SEVERITY_COLOR[sev] }} />
             </g>
           </g>
         ) : null;
