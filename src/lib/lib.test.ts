@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { applyTransform, chordAngleDeg, pointOnSag, sagLength, turn } from './geom';
 import { createRng } from './rng';
 import { formatMeasure, formatTwine } from './units';
+import { nailLabels } from './labels';
 import { fixtures, triangle, trianglePlan, triangleReport } from '@/contracts/fixtures';
 
 describe('geom', () => {
@@ -41,6 +42,17 @@ describe('units', () => {
   it('formats', () => {
     expect(formatMeasure(12.375, 'in')).toBe('12 3/8"');
     expect(formatTwine(41, 'in')).toBe('3 ft 5 in');
+  });
+});
+
+describe('labels', () => {
+  it('numbers nails in reading order', () => {
+    const l = nailLabels([
+      { id: 'b', x: 5, y: 0.2 },
+      { id: 'a', x: 1, y: 0.4 },
+      { id: 'c', x: 0, y: 3 },
+    ]);
+    expect(l).toEqual({ a: '1', b: '2', c: '3' });
   });
 });
 
