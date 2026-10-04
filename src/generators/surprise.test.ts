@@ -46,6 +46,36 @@ describe('surprise', () => {
     expect(recipes.size).toBeGreaterThan(5);
   });
 
+  it('includes frame recipes; frame accents sit on the frame nails', () => {
+    let gallery = 0, accented = 0, framed = 0;
+    for (const wall of walls)
+      for (let s = 0; s < 80; s++) {
+        const r = registry.surprise(s, wall);
+        const [a, b] = r.layers;
+        if (a.generatorId !== 'frame') continue;
+        expect(a.transform.scaleX).not.toBeCloseTo(a.transform.scaleY);
+        if (a.params.pattern === 'border') {
+          framed++;
+          expect(['star', 'string-art']).toContain(b.generatorId);
+          expect(b.transform.x).toBeCloseTo(a.transform.x);
+          expect(b.transform.y).toBeCloseTo(a.transform.y);
+          continue;
+        }
+        gallery++;
+        expect(['rows', 'zigzag']).toContain(a.params.pattern);
+        if (!b) continue;
+        accented++;
+        expect(b.generatorId).toBe('frame');
+        expect(b.transform).toEqual(a.transform);
+        const base = registry.get('frame')!.generate(a.params, a.seed).nails;
+        for (const p of registry.get('frame')!.generate(b.params, b.seed).nails)
+          expect(base.some((q) => Math.hypot(p.x - q.x, p.y - q.y) < 1e-9)).toBe(true);
+      }
+    expect(gallery).toBeGreaterThan(3);
+    expect(accented).toBeGreaterThan(0);
+    expect(framed).toBeGreaterThan(3);
+  });
+
   it('sometimes makes layers share nails', () => {
     let sharing = 0;
     for (let s = 0; s < 40; s++) {

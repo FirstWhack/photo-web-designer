@@ -8,6 +8,7 @@
 import type { LayerTransform, ParamValues, Wall } from '@/contracts/design';
 import type { Generator, SurpriseResult } from '@/contracts/generator';
 import { createRng, type Rng } from '@/lib/rng';
+import { frameTransform } from './frame';
 import { schemaDefaults } from './util';
 
 type SurpriseLayer = SurpriseResult['layers'][number];
@@ -156,6 +157,39 @@ function swag(rng: Rng): Motif {
   };
 }
 
+function galleryFrame(rng: Rng): Motif {
+  const pattern = rng.chance(0.6) ? 'rows' : 'zigzag';
+  return {
+    generatorId: 'frame',
+    name: pattern === 'rows' ? 'Gallery frame' : 'Garland frame',
+    sag: 0,
+    params: {
+      pattern,
+      nailsX: rng.int(7, 11),
+      nailsY: rng.int(5, 8),
+      outline: true,
+      tiers: rng.int(1, 3),
+    },
+  };
+}
+
+/** Accent on the same perimeter nails as `base` (same counts + same transform = shared nails). */
+function frameAccent(rng: Rng, base: Motif): Motif {
+  const pattern = rng.pick(['corners', 'corners', 'diamond'] as const);
+  return {
+    generatorId: 'frame',
+    name: pattern === 'corners' ? 'Stitched corners' : 'Diamond lattice',
+    sag: 0,
+    params: {
+      pattern,
+      nailsX: base.params.nailsX,
+      nailsY: base.params.nailsY,
+      outline: false,
+      cornerSet: rng.pick(['all', 'top', 'diagonal']),
+    },
+  };
+}
+
 const centrepiece = (rng: Rng): Motif =>
   rng.pick([spider, star, curveStitch, stringArt, organic] as const)(rng);
 
@@ -188,7 +222,7 @@ export function surprise(seed: number, wall: Wall, get: (id: string) => Generato
   const centre = circleAt(W / 2, H / 2, 0.4 * short);
   const placed: { motif: Motif; transform: LayerTransform }[] = [];
 
-  const recipe = rng.pick(['mandala-web', 'mandala-web', 'star-ring', 'stitched-star', 'garland', 'pair', 'net'] as const);
+  const recipe = rng.pick(['mandala-web', 'mandala-web', 'star-ring', 'stitched-star', 'garland', 'pair', 'net', 'gallery-frame', 'framed-centrepiece'] as const);
   switch (recipe) {
     case 'mandala-web': {
       const web = spider(rng);
@@ -245,6 +279,31 @@ export function surprise(seed: number, wall: Wall, get: (id: string) => Generato
         // Only add a garland if it clears the net's top edge.
         if (top.y + top.scaleY < H / 2 - 0.42 * short) placed.push({ motif: swag(rng), transform: top });
       }
+      break;
+    }
+    case 'gallery-frame': {
+      // A practical photo display: rows or a zig-zag inside a frame, maybe with an accent
+      // on the very same nails.
+      const t = frameTransform(wall);
+      const base = galleryFrame(rng);
+      placed.push({ motif: base, transform: t });
+      if (rng.chance(0.45)) placed.push({ motif: frameAccent(rng, base), transform: t });
+      break;
+    }
+    case 'framed-centrepiece': {
+      const t = frameTransform(wall);
+      placed.push({
+        motif: {
+          generatorId: 'frame',
+          name: 'Frame',
+          sag: 0,
+          params: { pattern: 'border', nailsX: rng.int(7, 13), nailsY: rng.int(7, 13), outline: true },
+        },
+        transform: t,
+      });
+      const r = 0.72 * Math.min(t.scaleX, t.scaleY);
+      const inner = rng.chance(0.5) ? star(rng) : stringArt(rng);
+      placed.push({ motif: inner, transform: circleAt(t.x, t.y, r) });
       break;
     }
   }
