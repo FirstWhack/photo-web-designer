@@ -117,3 +117,22 @@ export function walkHighlight(plan: BuildPlan, screen: WalkScreen | undefined): 
   if (screen.kind === 'start') return { nails: [run.nails[0]], edges: [] };
   return { nails: [run.nails[run.nails.length - 1]], edges: [] };
 }
+
+const ONBOARD_KEY = 'photo-web:wall-onboarded';
+
+/** Whether the first-run wall setup has been shown (storage can be unavailable, so never throw). */
+export function wallOnboarded(): boolean {
+  try {
+    return localStorage.getItem(ONBOARD_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+export function markWallOnboarded(): void {
+  try {
+    localStorage.setItem(ONBOARD_KEY, '1');
+  } catch {
+    /* ignore */
+  }
+}

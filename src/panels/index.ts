@@ -31,7 +31,6 @@ export { GroupPicker } from './GroupPicker';
 export { PatternGallery, type GalleryItem } from './PatternGallery';
 export { HistoryStrip, type HistoryItem } from './HistoryStrip';
 export { StatsChip } from './StatsChip';
-export { EmptyState } from './EmptyState';
 export { WallDialog, coverPlacement } from './WallDialog';
 export { IssuesList, PhotoSettings, PlaybackBar, SelectionPanel, ToolPalette, ViewOptions, TOOLS, TOOL_KEYS, toolHelp } from './RefinePanels';
 export * from './sizing';

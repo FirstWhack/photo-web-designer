@@ -411,3 +411,21 @@
 @media (prefers-reduced-motion: reduce) {
   .scrim, .dialog, .menu, .toast { animation: none; }
 }
+
+/* Touch screens: fingertip-sized targets, and 16px fields so iOS doesn't zoom the page on focus. */
+@media (pointer: coarse) {
+  .btn { height: 40px; }
+  .small { height: 34px; }
+  .large { height: 48px; }
+  .iconBtn { width: 40px; height: 40px; }
+  .iconBtnSm { width: 36px; height: 36px; }
+  .segBtn { height: 34px; }
+  .chip { height: 36px; padding-inline: 12px; }
+  .toggle { min-height: 40px; }
+  .menuItem { height: 44px; }
+  .input, .select { height: 40px; font-size: 16px; }
+  .range { height: 32px; }
+  .range::-webkit-slider-runnable-track { height: 5px; }
+  .range::-webkit-slider-thumb { width: 24px; height: 24px; margin-top: -10px; }
+  .range::-moz-range-thumb { width: 20px; height: 20px; }
+}

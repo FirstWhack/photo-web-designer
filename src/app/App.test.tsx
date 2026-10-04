@@ -8,18 +8,31 @@ import { App } from './App';
 
 const makeStore = () => createDesignStore({ registry, initial: emptyDesign(), storageKey: null });
 const stat = (name: string) => document.querySelector(`[data-stat="${name}"]`)?.textContent ?? '';
-/** The top-bar Surprise button (the empty state has a second one). */
 const surpriseButton = () => document.querySelector('header')!.querySelector('button[aria-label="Surprise me"]')!;
 
-beforeEach(() => localStorage.clear());
+beforeEach(() => {
+  localStorage.clear();
+  // Most tests are past the first-run wall setup; the onboarding test clears this.
+  localStorage.setItem('photo-web:wall-onboarded', '1');
+});
 afterEach(cleanup);
 
 // Whole-app renders are slow on a cold transform cache; don't flake on the 5 s default.
 describe('App', { timeout: 30_000 }, () => {
-  it('boots with an empty design and shows the empty state', () => {
+  it('first run opens wall setup, and Continue leaves a ready editor', () => {
+    localStorage.clear();
     render(<App store={makeStore()} />);
-    expect(screen.getByTestId('empty-state')).toBeTruthy();
-    expect(screen.getByText('Start with a rectangle frame')).toBeTruthy();
+    expect(screen.getByText('Set up your wall')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    expect(screen.queryByText('Set up your wall')).toBeNull();
+    expect(localStorage.getItem('photo-web:wall-onboarded')).toBe('1');
+    expect(screen.getByText('Add your first pattern')).toBeTruthy();
+  });
+
+  it('boots with an empty design and goes straight to the editor', () => {
+    render(<App store={makeStore()} />);
+    expect(screen.queryByText('Set up your wall')).toBeNull();
+    expect(screen.getByText('Add your first pattern')).toBeTruthy();
     expect(stat('nails')).toBe('0 nails');
     expect(screen.getByText(/72" × 48" wall/)).toBeTruthy();
   });
@@ -29,7 +42,7 @@ describe('App', { timeout: 30_000 }, () => {
     render(<App store={store} />);
     await act(async () => fireEvent.click(surpriseButton()));
     expect(store.getState().design.layers.length).toBeGreaterThan(0);
-    expect(screen.queryByTestId('empty-state')).toBeNull();
+    expect(screen.queryByText('Add your first pattern')).toBeNull();
     expect(stat('nails')).not.toBe('0 nails');
     expect(stat('runs')).not.toMatch(/^0 /);
     // the surprise was snapshotted into the variations strip
@@ -43,19 +56,10 @@ describe('App', { timeout: 30_000 }, () => {
     expect(store.getState().design.layers.length).toBeGreaterThan(0);
     await act(async () => fireEvent.click(screen.getByRole('button', { name: /^Undo/ })));
     expect(store.getState().design.layers).toHaveLength(0);
-    expect(screen.getByTestId('empty-state')).toBeTruthy();
+    expect(screen.getByText('Add your first pattern')).toBeTruthy();
     // and the keyboard shortcut redoes it
     await act(async () => fireEvent.keyDown(document.body, { key: 'z', ctrlKey: true, shiftKey: true }));
     expect(store.getState().design.layers.length).toBeGreaterThan(0);
-  });
-
-  it('starts a rectangle frame from the empty state', async () => {
-    const store = makeStore();
-    render(<App store={store} />);
-    await act(async () => fireEvent.click(screen.getByText('Start with a rectangle frame')));
-    expect(store.getState().design.layers.map((l) => l.generatorId)).toEqual(['frame']);
-    // the inspector shows real-world size, not raw scale
-    expect(screen.getByText('Size on the wall')).toBeTruthy();
   });
 
   it('adds a pattern at a preset size from the gallery in two clicks', async () => {

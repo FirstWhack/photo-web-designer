@@ -70,7 +70,7 @@ export function LayersPanel({ layers, groups, selectedId, onSelect, actions, des
   };
 
   if (!layers.length) {
-    return <p className={s.empty}>No pattern layers yet. Add one below, or press Surprise me.</p>;
+    return <p className={s.empty}>No patterns yet. Add one from the list, or press Surprise me.</p>;
   }
 
   return (

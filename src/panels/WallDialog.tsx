@@ -68,12 +68,15 @@ const SHAPES: { value: Shape; label: string }[] = [
 export function WallDialog({
   wall,
   hasGeometry,
+  onboarding = false,
   onApply,
   onClose,
 }: {
   wall: Wall;
   /** True when the design already has nails/layers (unit changes don't convert them). */
   hasGeometry: boolean;
+  /** First-run framing: a welcome line and a single "Continue" button. */
+  onboarding?: boolean;
   onApply: (wall: Wall) => void;
   onClose: () => void;
 }) {
@@ -117,19 +120,22 @@ export function WallDialog({
 
   return (
     <Dialog
-      title="Wall setup"
+      title={onboarding ? 'Set up your wall' : 'Wall setup'}
       onClose={onClose}
       footer={
         <>
-          <Button variant="ghost" onClick={onClose}>
-            Cancel
-          </Button>
+          {!onboarding && (
+            <Button variant="ghost" onClick={onClose}>
+              Cancel
+            </Button>
+          )}
           <Button variant="primary" onClick={apply} disabled={!(width > 0 && height > 0)}>
-            Apply
+            {onboarding ? 'Continue' : 'Apply'}
           </Button>
         </>
       }
     >
+      {onboarding && <p className={s.lede}>Tell us about the space you’re filling. Everything is drawn to real size, and you can change this any time.</p>}
       <Field label="Common spaces">
         <Chips>
           {presets.map((p) => {

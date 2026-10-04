@@ -309,34 +309,22 @@
 .statIssues:hover { filter: brightness(0.96); }
 .statIssues:focus-visible { outline: none; box-shadow: var(--focus-ring); }
 
-/* ── empty state ───────────────────────────────────── */
-.emptyState {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  padding: 16px;
-  pointer-events: none;
-  z-index: 5;
+.bigBtn { justify-content: center; }
+.emptyPicker { width: 100%; min-height: 0; overflow-y: auto; text-align: left; -webkit-overflow-scrolling: touch; }
+.emptyLink {
+  border: 0;
+  background: none;
+  padding: 6px 8px;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  text-decoration: underline;
+  cursor: pointer;
 }
-.emptyCard {
-  pointer-events: auto;
-  width: min(560px, 100%);
-  padding: 28px 28px 24px;
-  border: 1px solid var(--border);
-  border-radius: 18px;
-  background: color-mix(in srgb, var(--surface) 94%, transparent);
-  backdrop-filter: blur(6px);
-  box-shadow: var(--shadow-lg);
-  text-align: center;
-}
-.emptyArt { width: 150px; height: auto; margin: 0 auto 8px; display: block; }
-.artTwine { fill: none; stroke: var(--accent); stroke-width: 1.6; stroke-linecap: round; }
-.artTwine2 { fill: none; stroke: #c8a165; stroke-width: 1.6; stroke-linecap: round; }
-.artNail { fill: var(--nail); }
-.artPhoto { fill: var(--surface); stroke: var(--border-strong); stroke-width: 1; }
-.emptyTitle { margin: 0 0 6px; font-family: var(--font-hand); font-size: 34px; font-weight: 700; line-height: 1.1; }
-.emptyText { margin: 0 auto 20px; max-width: 380px; color: var(--text-muted); font-size: var(--text-md); line-height: 1.5; }
+.emptyLink:hover { color: var(--text); }
+/* Phones: the card is the pattern picker and takes the whole stage. */
+.emptyState:not([data-inline]) { align-items: stretch; padding: 8px; }
+.emptyState:not([data-inline]) .emptyCard { width: 100%; grid-template-rows: auto auto auto minmax(0, 1fr) auto; padding: 14px 12px 8px; }
+.emptyState:not([data-inline]) .emptyTitle { font-size: 26px; }
 .emptyActions { display: grid; gap: 8px; }
 .bigBtn {
   display: flex;

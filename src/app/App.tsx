@@ -23,7 +23,6 @@ import { analyze, planBuild } from '@/plan';
 import { PhotoSizeProvider, Scene, usePlayback } from '@/canvas';
 import {
   Button,
-  EmptyState,
   GroupsPanel,
   HistoryStrip,
   Icon,
@@ -58,7 +57,7 @@ import { BuildView, type BuildTab } from './BuildView';
 import { guardActions, liveSelection, sharedNailLayers, type Mode } from './guard';
 import { useMediaQuery } from './useMediaQuery';
 import { useVariations } from './useVariations';
-import { downloadBlob, galleryOrder, generatorPreview, isEmptyDesign, slug } from './util';
+import { downloadBlob, galleryOrder, generatorPreview, isEmptyDesign, markWallOnboarded, slug, wallOnboarded } from './util';
 import s from './App.module.css';
 
 export interface AppProps {
@@ -104,7 +103,7 @@ export function App({ store: injected, registry = defaultRegistry }: AppProps) {
   const [buildTab, setBuildTab] = useState<BuildTab>('drawing');
   const [selectedLayerId, setSelectedLayerId] = useState<LayerId | null>(null);
   const [drawer, setDrawer] = useState<'left' | 'right' | null>(null);
-  const [wallOpen, setWallOpen] = useState(false);
+  const [wallOpen, setWallOpen] = useState<false | 'setup' | 'onboarding'>(() => (isEmptyDesign(store.getState().design) && !wallOnboarded() ? 'onboarding' : false));
   const [toast, setToast] = useState<string | null>(null);
   const narrow = useMediaQuery('(max-width: 899px)');
   const wideBuild = useMediaQuery('(min-width: 1100px)');
@@ -250,8 +249,6 @@ export function App({ store: injected, registry = defaultRegistry }: AppProps) {
     [actions, registry, store, narrow],
   );
 
-  const starterId = registry.get('frame') ? 'frame' : 'spider-web';
-  const starterLabel = registry.get('frame') ? 'Start with a rectangle frame' : 'Start with a spider web';
 
   const normalizeNails = () => {
     const st = store.getState();
@@ -314,7 +311,15 @@ export function App({ store: injected, registry = defaultRegistry }: AppProps) {
     actions.newDesign({ width: design.wall.width, height: design.wall.height, units: design.wall.units });
     setSelectedLayerId(null);
     setMode('explore');
-    say('Fresh wall. Undo brings the old one back.');
+    setWallOpen('onboarding');
+  };
+  const closeWall = () => {
+    const first = wallOpen === 'onboarding';
+    setWallOpen(false);
+    if (!first) return;
+    markWallOnboarded();
+    // On a phone the pattern list lives in a drawer, so the next step has to be put in front of them.
+    if (narrow && isEmptyDesign(store.getState().design)) setDrawer('left');
   };
   const applyWall = (wall: Wall) => {
     const patch: Partial<Wall> = { ...wall };
@@ -432,8 +437,19 @@ export function App({ store: injected, registry = defaultRegistry }: AppProps) {
   let left: ReactNode = null;
   let right: ReactNode = null;
   if (mode === 'explore') {
+    const addSection = (
+      <Section title="Add pattern">
+        <PatternGallery
+          items={gallery.map((g) => ({ id: g.id, label: g.label, description: g.description }))}
+          previews={previews}
+          wall={design.wall}
+          onAdd={addPattern}
+        />
+      </Section>
+    );
     left = (
       <>
+        {empty && addSection}
         <Section title="Layers" actions={<span className={s.count}>{design.layers.length || ''}</span>}>
           <LayersPanel
             layers={design.layers}
@@ -448,14 +464,7 @@ export function App({ store: injected, registry = defaultRegistry }: AppProps) {
             counts={layerCounts}
           />
         </Section>
-        <Section title="Add pattern">
-          <PatternGallery
-            items={gallery.map((g) => ({ id: g.id, label: g.label, description: g.description }))}
-            previews={previews}
-            wall={design.wall}
-            onAdd={addPattern}
-          />
-        </Section>
+        {!empty && addSection}
         <Section title="Twine colours">
           <GroupsPanel groups={design.groups} activeGroupId={activeGroupId} actions={actions} usage={groupUsage} />
         </Section>
@@ -482,14 +491,18 @@ export function App({ store: injected, registry = defaultRegistry }: AppProps) {
     ) : (
       <div className={s.placeholder}>
         <Icon name="sliders" size={28} />
-        <h3>Pick a layer to tweak it</h3>
-        <p>Select a layer on the left, or click its twine on the wall. Then play with the sliders: every change is live.</p>
+        <h3>{empty ? 'Add your first pattern' : 'Pick a layer to tweak it'}</h3>
+        <p>
+          {empty
+            ? (narrow ? 'Open Patterns above' : 'Choose a pattern on the left') + ', or press Surprise me. Then play with the sliders: every change is live.'
+            : 'Select a layer on the left, or click its twine on the wall. Then play with the sliders: every change is live.'}
+        </p>
         <div className={s.wallCard}>
           <div>
             <div className={s.wallCardLabel}>Wall area</div>
             <div className={s.wallCardValue}>{wallLabel(design.wall).replace(/ wall$/, '')}</div>
           </div>
-          <Button size="small" icon="wall" onClick={() => setWallOpen(true)}>
+          <Button size="small" icon="wall" onClick={() => setWallOpen('setup')}>
             Wall setup
           </Button>
         </div>
@@ -629,7 +642,7 @@ export function App({ store: injected, registry = defaultRegistry }: AppProps) {
           <Menu
             items={[
               { label: 'New design', icon: 'file', onSelect: newDesign },
-              { label: 'Wall setup…', icon: 'wall', onSelect: () => setWallOpen(true) },
+              { label: 'Wall setup…', icon: 'wall', onSelect: () => setWallOpen('setup') },
               { label: 'Import JSON', icon: 'upload', onSelect: () => fileRef.current?.click(), separatorBefore: true },
               { label: 'Export JSON', icon: 'download', onSelect: exportJson },
               { label: 'Copy share link', icon: 'share', onSelect: () => void copyShareLink() },
@@ -692,21 +705,10 @@ export function App({ store: injected, registry = defaultRegistry }: AppProps) {
                 highlight={highlight}
                 viewReserve={narrow && drawer === 'right' ? 0.56 : 0}
               />
-              {empty && mode === 'explore' && (
-                <EmptyState
-                  onSurprise={surprise}
-                  starterLabel={starterLabel}
-                  onStarter={() => addPattern(starterId, null)}
-                  onScratch={() => {
-                    setMode('refine');
-                    setTool('add-nail');
-                  }}
-                />
-              )}
               {narrow && (
                 <div className={s.drawerToggles}>
                   <Button size="small" icon={mode === 'explore' ? 'layers' : 'pointer'} onClick={() => setDrawer('left')}>
-                    {mode === 'explore' ? 'Layers' : 'Tools'}
+                    {mode === 'explore' ? 'Patterns' : 'Tools'}
                   </Button>
                   <Button size="small" icon="sliders" onClick={() => setDrawer('right')}>
                     {mode === 'explore' ? 'Tweak' : 'Inspect'}
@@ -748,8 +750,9 @@ export function App({ store: injected, registry = defaultRegistry }: AppProps) {
         <WallDialog
           wall={design.wall}
           hasGeometry={!empty}
+          onboarding={wallOpen === 'onboarding'}
           onApply={applyWall}
-          onClose={() => setWallOpen(false)}
+          onClose={closeWall}
         />
       )}
       <Toast message={toast} />
