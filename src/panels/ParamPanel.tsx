@@ -1,6 +1,6 @@
 import type { ParamValue, ParamValues } from '@/contracts/design';
 import type { ParamDef, ParamSchema } from '@/contracts/generator';
-import { Field, Segmented, Select, SliderField, Toggle, type GestureProps } from './ui';
+import { Chip, Chips, Field, Segmented, Select, SliderField, Toggle, type GestureProps } from './ui';
 import s from './panels.module.css';
 
 export interface ParamPanelProps extends GestureProps {
@@ -12,6 +12,8 @@ export interface ParamPanelProps extends GestureProps {
 
 /** Up to this many options render as a segmented control; more fall back to a select. */
 const SEGMENT_MAX = 3;
+/** Up to this many render as wrapping chips; more fall back to a select. */
+const CHIP_MAX = 12;
 
 function current(def: ParamDef, values: ParamValues): ParamValue {
   const v = values[def.key];
@@ -65,6 +67,14 @@ export function ParamPanel({ schema, values, onChange, onGestureStart, onGesture
                       options={def.options.map((o) => ({ value: o.value, label: o.label }))}
                       onChange={(x) => onChange(def.key, x)}
                     />
+                  ) : def.options.length <= CHIP_MAX ? (
+                    <Chips>
+                      {def.options.map((o) => (
+                        <Chip key={o.value} pressed={v === o.value} onClick={() => onChange(def.key, o.value)}>
+                          {o.label}
+                        </Chip>
+                      ))}
+                    </Chips>
                   ) : (
                     <Select label={def.label} value={v as string} options={def.options} onChange={(x) => onChange(def.key, x)} />
                   )}

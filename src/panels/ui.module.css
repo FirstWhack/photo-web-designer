@@ -139,7 +139,9 @@
 }
 .input:hover, .select:hover { border-color: var(--border-strong); }
 .input:focus, .select:focus { outline: none; border-color: var(--accent-2); box-shadow: var(--focus-ring); }
-.num { text-align: right; padding-right: 6px; }
+.num { text-align: right; padding-right: 6px; -moz-appearance: textfield; appearance: textfield; }
+.num::-webkit-inner-spin-button,
+.num::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 .select { padding-right: 4px; }
 
 /* range slider */
@@ -387,7 +389,7 @@
 .toast {
   position: fixed;
   left: 50%;
-  bottom: 24px;
+  top: 72px;
   z-index: 200;
   transform: translateX(-50%);
   padding: 10px 16px;
@@ -404,7 +406,7 @@
 
 @keyframes fade { from { opacity: 0; } }
 @keyframes pop { from { opacity: 0; transform: translateY(-4px) scale(0.98); } }
-@keyframes rise { from { opacity: 0; transform: translate(-50%, 8px); } }
+@keyframes rise { from { opacity: 0; transform: translate(-50%, -8px); } }
 
 @media (prefers-reduced-motion: reduce) {
   .scrim, .dialog, .menu, .toast { animation: none; }

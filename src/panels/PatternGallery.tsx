@@ -27,6 +27,8 @@ const SHAPES: { value: Shape; label: string }[] = [
   { value: 'square', label: 'Square' },
 ];
 
+const scrollIntoView = (el: HTMLElement | null) => el?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
+
 /** "Add pattern": one live card per generator. Picking one asks for a size in a single extra click. */
 export function PatternGallery({ items, previews, wall, onAdd, thumbWidth = 112 }: PatternGalleryProps) {
   const [open, setOpen] = useState<string | null>(null);
@@ -64,7 +66,13 @@ export function PatternGallery({ items, previews, wall, onAdd, thumbWidth = 112 
         })}
       </div>
       {openItem && (
-        <div className={s.sizeSheet} role="dialog" aria-label={`Add ${openItem.label}`}>
+        <div
+          className={s.sizeSheet}
+          role="dialog"
+          aria-label={`Add ${openItem.label}`}
+          key={openItem.id}
+          ref={scrollIntoView}
+        >
           <div className={s.sizeSheetHead}>
             <strong>Add {openItem.label}</strong>
             <IconButton small icon="close" label="Cancel" onClick={() => setOpen(null)} />

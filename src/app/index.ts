@@ -1,2 +1,2 @@
-/** APP domain (wiring) — owner: ui-shell agent. */
-export { App } from './App';
+/** APP domain (wiring): the composed Photo Web Designer. */
+export { App, type AppProps } from './App';

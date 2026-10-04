@@ -5,6 +5,7 @@ import { formatLength } from '@/lib/units';
 import { GroupPicker } from './GroupPicker';
 import { Icon } from './icons';
 import { ParamPanel } from './ParamPanel';
+import { visibleParams } from './paramVisibility';
 import {
   alignDelta,
   fillWallSize,
@@ -125,7 +126,7 @@ export function LayerInspector(props: LayerInspectorProps) {
           <>
             {generator.description && <p className={s.lede}>{generator.description}</p>}
             <ParamPanel
-              schema={generator.schema}
+              schema={visibleParams(generator.id, generator.schema, layer.params)}
               values={layer.params}
               onChange={(key: string, value: ParamValue) => onUpdate({ params: { ...layer.params, [key]: value } })}
               {...g}
@@ -224,7 +225,7 @@ export function LayerInspector(props: LayerInspectorProps) {
             ))}
           </div>
         </div>
-        <SliderField label="Rotation" value={t.rotation} min={-180} max={180} step={1} onChange={(rotation) => setT({ rotation })} suffix="°" {...g} />
+        <SliderField label="Rotation (°)" value={t.rotation} min={-180} max={180} step={1} onChange={(rotation) => setT({ rotation })} {...g} />
         {out > 0.01 && (
           <Note tone="warn">
             Pokes {formatLength(out, units)} outside the wall. Shrink it or use the align buttons.
