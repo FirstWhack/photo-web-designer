@@ -4,4 +4,5 @@
  */
 export { Scene } from './Scene';
 export { Thumbnail } from './Thumbnail';
-export { usePlayback } from './usePlayback';
+export { usePlayback, DEFAULT_PLAYBACK_SPEED } from './usePlayback';
+export { fitView, type View } from './Scene';
