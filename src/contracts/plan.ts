@@ -50,6 +50,7 @@ export interface BuildPlan {
   runs: Run[];
   totals: {
     runs: number;
+    /** All nails in the design, including any with no twine attached. */
     nails: number;
     edges: number;
     /** Sum of cutLength per group. */
