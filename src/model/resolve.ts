@@ -143,7 +143,12 @@ export function resolveDetailed(
     if (!layer.visible && layer.id !== forceVisible) continue;
     const geo = layerGeometry(layer, registry);
     if (!geo) continue;
-    for (const n of geo.nails) if (pushNail(n)) owner.set(n.id, layer.id);
+    for (const n of geo.nails) {
+      // A baked strand may have materialized this same shared endpoint already.
+      // Keep recording the live owner so edits still account for that layer.
+      owner.set(n.id, layer.id);
+      pushNail(n);
+    }
     for (const e of geo.edges) pushEdge(e);
   }
 

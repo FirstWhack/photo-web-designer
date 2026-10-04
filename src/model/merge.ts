@@ -24,7 +24,7 @@ export function edgeKey(a: NailId, b: NailId, groupId: string): string {
  * Edges whose endpoints are not in `nails` are passed through untouched.
  */
 export function mergeNails(nails: Nail[], edges: Edge[], tolerance: number): MergeResult {
-  const alias: Record<NailId, NailId> = {};
+  const alias: Record<NailId, NailId> = Object.create(null);
   const out: Nail[] = [];
   const seenIds = new Set<NailId>();
   const tol = Number.isFinite(tolerance) && tolerance > 0 ? tolerance : 0;

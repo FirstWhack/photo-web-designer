@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { Layer, LayerTransform, ParamValue, StrandGroup, Wall } from '@/contracts/design';
 import type { Generator } from '@/contracts/generator';
 import { formatLength } from '@/lib/units';
@@ -68,6 +68,14 @@ export function LayerInspector(props: LayerInspectorProps) {
   const size = sizeOf(t);
   const shape = shapeOf(size, 0.002);
   const [lockAspect, setLockAspect] = useState(true);
+  const hasDefaultSag = useMemo(() => {
+    if (!generator) return false;
+    try {
+      return generator.generate(layer.params, layer.seed).edges.some((e) => e.sag === undefined);
+    } catch {
+      return false;
+    }
+  }, [generator, layer.params, layer.seed]);
   const g = { onGestureStart, onGestureEnd };
   const fine = units === 'cm' ? 1 : 0.5;
   const maxDim = Math.max(wall.width, wall.height) * 1.5;
@@ -235,7 +243,7 @@ export function LayerInspector(props: LayerInspectorProps) {
 
       <Section title="Twine">
         <GroupPicker groups={groups} value={layer.groupId} onChange={(groupId) => onUpdate({ groupId })} />
-        <SliderField
+        {hasDefaultSag && <SliderField
           label="Sag"
           hint="0 is taut, 1 is a lazy swag."
           value={layer.sag}
@@ -244,7 +252,7 @@ export function LayerInspector(props: LayerInspectorProps) {
           step={0.01}
           onChange={(sag) => onUpdate({ sag })}
           {...g}
-        />
+        />}
       </Section>
       {layer.locked && (
         <div className={s.lockedNote}>

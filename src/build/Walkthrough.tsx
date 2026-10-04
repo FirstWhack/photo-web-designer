@@ -4,7 +4,7 @@ import type { WalkthroughProps } from '@/contracts/ui';
 import { nailLabels } from '@/lib/labels';
 import { formatTwine } from '@/lib/units';
 import { MiniMap, WrapGlyph } from './MiniMap';
-import { buildScreens, planSignature, runStartText, stepText, totalSteps, WRAP_HINT } from './walk';
+import { buildScreens, walkthroughSignature, runStartText, stepText, totalSteps, WRAP_HINT } from './walk';
 import styles from './build.module.css';
 
 interface Saved {
@@ -36,7 +36,7 @@ function save(key: string | undefined, value: Saved | null) {
 
 /** Step-by-step stringing guide, used standing at the wall. */
 export function Walkthrough(props: WalkthroughProps) {
-  const sig = useMemo(() => planSignature(props.plan), [props.plan]);
+  const sig = useMemo(() => walkthroughSignature(props.plan, props.resolved), [props.plan, props.resolved]);
   return <WalkthroughInner key={`${props.storageKey ?? ''}::${sig}`} {...props} sig={sig} />;
 }
 

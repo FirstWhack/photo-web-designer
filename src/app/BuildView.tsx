@@ -11,11 +11,12 @@ import {
   exportPlanPdf,
   exportTemplatePdf,
   templateLayout,
+  walkthroughSignature,
   type PlanPaper,
 } from '@/build';
 import { Scene } from '@/canvas';
 import { Button, Field, Note, Segmented, Tabs, Icon } from '@/panels';
-import { downloadBlob, planHash, slug, walkHighlight, walkScreens } from './util';
+import { downloadBlob, hashString, slug, walkHighlight, walkScreens } from './util';
 import s from './App.module.css';
 
 export type BuildTab = 'drawing' | 'cut' | 'coords' | 'template' | 'walk';
@@ -73,7 +74,7 @@ export function BuildView({
   const [zoom, setZoom] = useState<Zoom>('1');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const storageKey = `photo-web:walk:${createdAt}:${planHash(plan)}`;
+  const storageKey = `photo-web:walk:${createdAt}:${hashString(walkthroughSignature(plan, resolved))}`;
 
   // Follow the walkthrough's position so the big scene can highlight the current step.
   const [walkIndex, setWalkIndex] = useState(0);

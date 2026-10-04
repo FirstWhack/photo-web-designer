@@ -1,6 +1,7 @@
 import type { Design, Layer, ResolvedDesign, Wall } from '@/contracts/design';
 import type { Generator, GeneratorRegistry } from '@/contracts/generator';
 import type { BuildPlan } from '@/contracts/plan';
+import { planSignature } from '@/build';
 import { DEFAULT_GROUP_COLORS, emptyDesign } from '@/contracts/defaults';
 import { resolveDesign, fallbackTransform } from '@/model';
 
@@ -85,7 +86,7 @@ export function hashString(s: string): string {
   return (h >>> 0).toString(36);
 }
 
-export const planHash = (plan: BuildPlan) => hashString(plan.runs.map((r) => r.steps.map((s) => s.edgeId).join(',')).join('|'));
+export const planHash = (plan: BuildPlan) => hashString(planSignature(plan));
 
 /** Mirrors the walkthrough's screen sequence so the app can highlight the current step. */
 export type WalkScreen =

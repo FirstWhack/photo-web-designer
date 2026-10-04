@@ -12,7 +12,7 @@ import { mergeNails as mergeNailsImpl } from './merge';
 
 export type { CreateDesignStoreOptions } from './store';
 export { DEFAULT_STORAGE_KEY, AUTOSAVE_DELAY_MS, bakeLayerInDesign, fallbackTransform } from './store';
-export { layerNailId, layerEdgeId, clearLayerCache } from './resolve';
+export { layerNailId, layerEdgeId, clearLayerCache, resolveDetailed, type ResolveDetail } from './resolve';
 export { validateDesign, serializeDesign, deserializeDesign, encodeShareLink, decodeShareLink } from './serialize';
 
 export function createDesignStore(opts: CreateDesignStoreOptions): DesignStore {

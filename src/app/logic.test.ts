@@ -2,13 +2,29 @@ import { describe, expect, it } from 'vitest';
 import type { DesignActions, DesignStore } from '@/contracts/actions';
 import type { ResolvedDesign } from '@/contracts/design';
 import { emptyDesign, defaultAnalyzeOptions } from '@/contracts/defaults';
-import { createDesignStore, resolveDesign } from '@/model';
+import { createDesignStore, deserializeDesign, resolveDesign, resolveDetailed } from '@/model';
 import { registry } from '@/generators';
-import { analyze } from '@/plan';
+import { analyze, planBuild } from '@/plan';
 import { autoFillPins } from './autofill';
-import { guardActions, liveSelection, type Mode } from './guard';
+import { guardActions, liveSelection, sharedNailLayers, type Mode } from './guard';
 
 const G = { id: 'g', name: 'Jute', color: '#c8a165', thickness: 2 };
+
+it('resolves and builds imported IDs that match JavaScript object properties', () => {
+  const design = emptyDesign();
+  design.groups = [{ ...G, id: '__proto__' }];
+  design.nails = [{ id: 'constructor', x: 1, y: 1 }, { id: 'toString', x: 41, y: 1 }];
+  design.edges = [{ id: '__proto__', a: 'constructor', b: 'toString', groupId: '__proto__', sag: 0 }];
+  const resolved = resolveDesign(deserializeDesign(JSON.stringify(design)), registry);
+  expect(resolved.edges[0].a).toBe('constructor');
+  expect(resolved.edges[0].b).toBe('toString');
+  const plan = planBuild(resolved);
+  expect(plan.runs).toHaveLength(1);
+  expect(plan.totals.cutLengthByGroup.__proto__).toBeGreaterThan(40);
+  const report = analyze(resolved);
+  expect(report.nailLoad.toString).toBe(1);
+  expect(report.photoSlots.__proto__).toBeGreaterThan(0);
+});
 
 describe('autoFillPins', () => {
   const resolved: ResolvedDesign = {
@@ -67,6 +83,34 @@ describe('autoFillPins', () => {
 });
 
 describe('guardActions', () => {
+  it('keeps baked strands after removing the live frame they shared nails with', () => {
+    const store = createDesignStore({ registry, initial: emptyDesign(), storageKey: null });
+    const base = store.getState();
+    const rows = base.addLayer({ generatorId: 'frame', seed: 1 });
+    const columns = base.addLayer({ generatorId: 'frame', seed: 1, params: { pattern: 'columns', outline: false } });
+    const before = resolveDesign(store.getState().design, registry).edges.filter((e) => e.layerId === columns);
+    expect(before.length).toBeGreaterThan(0);
+    base.bakeLayer(columns);
+    base.removeLayer(rows);
+    const after = resolveDesign(store.getState().design, registry);
+    expect(after.edges.map((e) => e.id).sort()).toEqual(before.map((e) => e.id).sort());
+    expect(after.nails.length).toBeGreaterThan(0);
+  });
+
+  it('protects shared endpoints materialized by baking when their live owner is locked', () => {
+    const store = createDesignStore({ registry, initial: emptyDesign(), storageKey: null });
+    const base = store.getState();
+    base.addLayer({ generatorId: 'frame', seed: 1, locked: true });
+    const columns = base.addLayer({ generatorId: 'frame', seed: 1, params: { pattern: 'columns', outline: false } });
+    base.bakeLayer(columns);
+    const detail = resolveDetailed(store.getState().design, registry);
+    const nail = detail.resolved.nails[0];
+    const before = store.getState().design;
+    const guarded = guardActions(base, () => ({ design: before, selection: store.getState().selection, resolved: detail.resolved, nailLayers: sharedNailLayers(detail), mode: 'refine' }));
+    guarded.moveNails([nail.id], { x: 2, y: 0 });
+    expect(store.getState().design).toBe(before);
+  });
+
   function setup(mode: Mode = 'refine') {
     const store: DesignStore = createDesignStore({ registry, initial: emptyDesign(), storageKey: null });
     const base: DesignActions = store.getState();
@@ -93,6 +137,24 @@ describe('guardActions', () => {
     guarded.moveNails([n.id], { x: 5, y: 0 });
     const moved = store.getState().design.nails.find((x) => x.id === n.id);
     expect(moved?.x).toBeCloseTo(n.x + 5); // unlocked: the move goes through (and bakes)
+  });
+
+  it.each(['move', 'delete'] as const)('protects a locked frame sharing nails with an unlocked frame (%s)', (operation) => {
+    const store = createDesignStore({ registry, initial: emptyDesign(), storageKey: null });
+    const base = store.getState();
+    base.addLayer({ generatorId: 'frame', seed: 1 });
+    base.addLayer({ generatorId: 'frame', seed: 1, locked: true, groupId: base.addGroup() });
+    const guarded = guardActions(base, () => {
+      const st = store.getState();
+      const detail = resolveDetailed(st.design, registry);
+      return { design: st.design, selection: st.selection, resolved: detail.resolved, nailLayers: sharedNailLayers(detail), mode: 'refine' };
+    });
+    const nail = resolveDesign(store.getState().design, registry).nails[0];
+    base.setSelection({ nails: [nail.id] });
+    const before = store.getState().design;
+    if (operation === 'move') guarded.moveNails([nail.id], { x: 2, y: 0 });
+    else guarded.deleteSelection();
+    expect(store.getState().design).toBe(before);
   });
 
   it('blocks deleting a locked layer’s nails and edges', () => {

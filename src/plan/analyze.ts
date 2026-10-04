@@ -58,10 +58,10 @@ export function analyzeImpl(resolved: ResolvedDesign, opts?: Partial<AnalyzeOpti
   const fmt = (v: number) => formatLength(v, units, 2);
 
   const pos = new Map<NailId, Vec2>(resolved.nails.map((p) => [p.id, { x: p.x, y: p.y }]));
-  const nailLoad: Record<NailId, number> = {};
+  const nailLoad: Record<NailId, number> = Object.create(null);
   for (const p of resolved.nails) nailLoad[p.id] = 0;
-  const edgeScore: Record<EdgeId, number> = {};
-  const photoSlots: Record<EdgeId, number> = {};
+  const edgeScore: Record<EdgeId, number> = Object.create(null);
+  const photoSlots: Record<EdgeId, number> = Object.create(null);
   let twineLength = 0;
   let totalSlots = 0;
 

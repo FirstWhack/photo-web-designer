@@ -14,12 +14,13 @@ import {
   deserializeDesign,
   encodeShareLink,
   resolveDesign,
+  resolveDetailed,
   serializeDesign,
   useDesignStore,
 } from '@/model';
 import { registry as defaultRegistry } from '@/generators';
 import { analyze, planBuild } from '@/plan';
-import { Scene, usePlayback } from '@/canvas';
+import { PhotoSizeProvider, Scene, usePlayback } from '@/canvas';
 import {
   Button,
   EmptyState,
@@ -52,7 +53,7 @@ import {
 } from '@/panels';
 import { autoFillPins } from './autofill';
 import { BuildView, type BuildTab } from './BuildView';
-import { guardActions, liveSelection, type Mode } from './guard';
+import { guardActions, liveSelection, sharedNailLayers, type Mode } from './guard';
 import { useMediaQuery } from './useMediaQuery';
 import { useVariations } from './useVariations';
 import { downloadBlob, galleryOrder, generatorPreview, isEmptyDesign, slug } from './util';
@@ -117,7 +118,9 @@ export function App({ store: injected, registry = defaultRegistry }: AppProps) {
 
   // ── derived design data ──────────────────────────────
   const units = design.wall.units;
-  const resolved = useMemo(() => resolveDesign(design, registry), [design, registry]);
+  const detail = useMemo(() => resolveDetailed(design, registry), [design, registry]);
+  const resolved = detail.resolved;
+  const nailLayers = useMemo(() => sharedNailLayers(detail), [detail]);
   const deferred = useDeferredValue(resolved);
   const analyzeOpts = useMemo(() => ({ ...defaultAnalyzeOptions(units), photo: photoSpec(photoPreset, units) }), [units, photoPreset]);
   const plan = useMemo(() => planBuild(deferred), [deferred]);
@@ -126,10 +129,10 @@ export function App({ store: injected, registry = defaultRegistry }: AppProps) {
   const empty = isEmptyDesign(design);
 
   // ── guarded actions for the Scene ────────────────────
-  const live = useRef({ resolved, mode });
+  const live = useRef({ resolved, mode, nailLayers });
   useEffect(() => {
-    live.current = { resolved, mode };
-  }, [resolved, mode]);
+    live.current = { resolved, mode, nailLayers };
+  }, [resolved, mode, nailLayers]);
   const sceneActions = useMemo(
     () =>
       guardActions(actions, () => ({
@@ -137,6 +140,7 @@ export function App({ store: injected, registry = defaultRegistry }: AppProps) {
         selection: store.getState().selection,
         resolved: live.current.resolved,
         mode: live.current.mode,
+        nailLayers: live.current.nailLayers,
       })),
     [actions, store],
   );
@@ -239,7 +243,8 @@ export function App({ store: injected, registry = defaultRegistry }: AppProps) {
   const starterLabel = registry.get('frame') ? 'Start with a rectangle frame' : 'Start with a spider web';
 
   const autoFill = () => {
-    const pins: Pin[] = autoFillPins(deferred, report, analyzeOpts);
+    const current = resolveDesign(store.getState().design, registry);
+    const pins: Pin[] = autoFillPins(current, analyze(current, analyzeOpts), analyzeOpts);
     actions.setPins(pins);
     say(pins.length ? `Pinned ${pins.length} photo${pins.length === 1 ? '' : 's'}` : 'No level strands long enough for photos');
   };
@@ -349,12 +354,12 @@ export function App({ store: injected, registry = defaultRegistry }: AppProps) {
 
   // ── per-layer info ───────────────────────────────────
   const layerCounts = useMemo(() => {
-    const c: Record<string, number> = {};
+    const c: Record<string, number> = Object.create(null);
     for (const e of resolved.edges) if (e.layerId) c[e.layerId] = (c[e.layerId] ?? 0) + 1;
     return c;
   }, [resolved]);
   const groupUsage = useMemo(() => {
-    const c: Record<string, number> = {};
+    const c: Record<string, number> = Object.create(null);
     for (const e of resolved.edges) c[e.groupId] = (c[e.groupId] ?? 0) + 1;
     return c;
   }, [resolved]);
@@ -558,6 +563,7 @@ export function App({ store: injected, registry = defaultRegistry }: AppProps) {
   );
 
   return (
+    <PhotoSizeProvider photo={analyzeOpts.photo} units={units}>
     <div className={s.app} data-mode={mode} data-narrow={narrow || undefined}>
       <header className={s.topbar}>
         <div className={s.brand}>
@@ -720,5 +726,6 @@ export function App({ store: injected, registry = defaultRegistry }: AppProps) {
       )}
       <Toast message={toast} />
     </div>
+    </PhotoSizeProvider>
   );
 }

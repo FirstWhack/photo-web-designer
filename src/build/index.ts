@@ -3,6 +3,7 @@
  * Turns a ResolvedDesign + BuildPlan into things you use at the wall.
  */
 export { Walkthrough } from './Walkthrough';
+export { planSignature, walkthroughSignature } from './walk';
 export { CutList } from './CutList';
 export { CoordTable } from './CoordTable';
 /** 1:1-scale nail template, tiled across pages with registration marks. */

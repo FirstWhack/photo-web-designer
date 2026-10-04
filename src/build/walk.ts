@@ -1,4 +1,4 @@
-import type { NailId, StrandGroup, Units } from '@/contracts/design';
+import type { NailId, ResolvedDesign, StrandGroup, Units } from '@/contracts/design';
 import type { BuildPlan, Run, Step, WrapAction } from '@/contracts/plan';
 import { formatTwine } from '@/lib/units';
 
@@ -59,5 +59,10 @@ export const WRAP_HINT: Record<WrapAction, string> = {
 
 /** Stable signature so stored progress is discarded when the plan changes. */
 export function planSignature(plan: BuildPlan): string {
-  return plan.runs.map((r) => `${r.id}:${r.steps.map((s) => s.edgeId).join(',')}`).join('|');
+  return JSON.stringify(plan.runs);
+}
+
+/** Nail labels and physical units are part of the instructions, too. */
+export function walkthroughSignature(plan: BuildPlan, resolved: ResolvedDesign): string {
+  return JSON.stringify([plan.runs, resolved.wall.units, resolved.wall.width, resolved.wall.height, resolved.nails, resolved.groups]);
 }

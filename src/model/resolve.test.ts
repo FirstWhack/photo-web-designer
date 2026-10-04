@@ -151,7 +151,7 @@ describe('resolveDesign', () => {
       const baked = bakeLayerInDesign(d, reg, id);
       expect(baked.layers.some((l) => l.id === id)).toBe(false);
       const after = resolveDesign(baked, reg);
-      expect(after.nails.map((x) => [x.id, x.x, x.y])).toEqual(before.nails.map((x) => [x.id, x.x, x.y]));
+      expect(after.nails.map((x) => [x.id, x.x, x.y]).sort()).toEqual(before.nails.map((x) => [x.id, x.x, x.y]).sort());
       expect(after.edges.map((x) => [x.id, x.a, x.b, x.groupId, x.sag]).sort()).toEqual(
         before.edges.map((x) => [x.id, x.a, x.b, x.groupId, x.sag]).sort(),
       );

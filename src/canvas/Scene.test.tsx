@@ -6,6 +6,7 @@ import type { PlaybackState } from '@/contracts/ui';
 import { fixtures, triangle, trianglePlan } from '@/contracts/fixtures';
 import { Scene } from './Scene';
 import { Thumbnail } from './Thumbnail';
+import { PhotoSizeProvider } from './PhotoSize';
 
 const NO_SEL: Selection = { nails: [], edges: [], pins: [] };
 
@@ -53,6 +54,24 @@ const up = (el: Element) => fireEvent.pointerUp(el, { button: 0, pointerId: 1, c
 afterEach(cleanup);
 
 describe('Scene rendering', () => {
+  it('draws photos at the selected real size and converts provider units', () => {
+    const resolved = { ...triangle, pins: [{ id: 'p', edgeId: triangle.edges[0].id, t: 0.5 }] };
+    const { container, rerender } = render(
+      <PhotoSizeProvider photo={{ width: 4, height: 6, gap: 2 }} units="in">
+        <Scene resolved={resolved} selection={NO_SEL} tool="select" activeGroupId="g-jute" />
+      </PhotoSizeProvider>,
+    );
+    const photo = () => container.querySelector('[data-pin-id="p"] rect[fill^="url("]')!;
+    expect(photo().getAttribute('width')).toBe('4');
+    expect(photo().getAttribute('height')).toBe('6');
+    rerender(
+      <PhotoSizeProvider photo={{ width: 12.7, height: 17.78, gap: 5.08 }} units="cm">
+        <Scene resolved={resolved} selection={NO_SEL} tool="select" activeGroupId="g-jute" />
+      </PhotoSizeProvider>,
+    );
+    expect(Number(photo().getAttribute('width'))).toBeCloseTo(5);
+    expect(Number(photo().getAttribute('height'))).toBeCloseTo(7);
+  });
   for (const [name, fx] of Object.entries(fixtures)) {
     it(`renders one twine group per edge (${name})`, () => {
       const { container } = render(<Scene resolved={fx} selection={NO_SEL} tool="select" activeGroupId={fx.groups[0].id} />);
@@ -124,6 +143,25 @@ describe('playback', () => {
 });
 
 describe('tools', () => {
+  it('ends a started gesture when unmounted during a drag', () => {
+    const actions = mockActions();
+    const { container, unmount } = render(<Scene resolved={triangle} selection={NO_SEL} tool="select" activeGroupId="g-jute" actions={actions} />);
+    down(nailEl(container, 'A'), { clientX: 100, clientY: 100 });
+    fireEvent.pointerMove(container.querySelector('[data-scene]')!, { pointerId: 1, buttons: 1, clientX: 140, clientY: 100 });
+    expect(actions.beginGesture).toHaveBeenCalledTimes(1);
+    unmount();
+    expect(actions.endGesture).toHaveBeenCalledTimes(1);
+  });
+
+  it('clears a pending zoom transform when fitting before the zoom settles', () => {
+    const { container } = render(<Scene resolved={triangle} selection={NO_SEL} tool="pan" activeGroupId="g-jute" />);
+    const root = container.querySelector('[data-scene]')!;
+    const svg = container.querySelector('svg')!;
+    fireEvent.wheel(root, { deltaY: -100, clientX: 200, clientY: 200 });
+    expect(svg.style.transform).toContain('scale');
+    fireEvent.click(container.querySelector('button[title^="Fit"]')!);
+    expect(svg.style.transform).toBe('');
+  });
   it('connect: clicks chain A→B→C and call connect with the active group', () => {
     const actions = mockActions();
     const { container } = render(<Scene resolved={triangle} selection={NO_SEL} tool="connect" activeGroupId="g-jute" actions={actions} />);

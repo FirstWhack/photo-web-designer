@@ -71,9 +71,10 @@ function liveLayerIds(design: Design): Set<LayerId> {
 
 /**
  * Freeze a layer into hand nails/edges, keeping ids. Uses the current resolve so
- * the resolved geometry is unchanged: nails of this layer that were merged into
- * earlier nails are not baked, and hand edges referring to them are rewritten
- * to the survivor. Unknown generators: the layer is simply removed.
+ * the resolved geometry is unchanged. Shared endpoint nails are materialized as
+ * well, so deleting another live layer cannot erase the baked strands. Hand
+ * edges referring to merged nails are rewritten to the survivor.
+ * Unknown generators: the layer is simply removed.
  */
 export function bakeLayerInDesign(design: Design, registry: GeneratorRegistry, layerId: LayerId): Design {
   const layer = design.layers.find((l) => l.id === layerId);
@@ -86,10 +87,13 @@ export function bakeLayerInDesign(design: Design, registry: GeneratorRegistry, l
   const geoEdgeIds = new Set(geo.edges.map((e) => e.id));
   const handNailIds = new Set(design.nails.map((n) => n.id));
   const handEdgeIds = new Set(design.edges.map((e) => e.id));
-  const bakedNails = det.resolved.nails.filter((n) => det.owner.get(n.id) === layerId && !handNailIds.has(n.id));
   const bakedEdges = det.resolved.edges.filter((e) => geoEdgeIds.has(e.id) && !handEdgeIds.has(e.id));
+  const endpoints = new Set(bakedEdges.flatMap((e) => [e.a, e.b]));
+  const bakedNails = det.resolved.nails
+    .filter((n) => !handNailIds.has(n.id) && (det.owner.get(n.id) === layerId || endpoints.has(n.id)))
+    .map((n) => ({ ...n, layerId }));
 
-  const alias: Record<NailId, NailId> = {};
+  const alias: Record<NailId, NailId> = Object.create(null);
   for (const n of geo.nails) {
     const to = det.alias[n.id];
     if (to !== undefined) alias[n.id] = to;

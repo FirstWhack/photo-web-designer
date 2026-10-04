@@ -78,6 +78,8 @@ export function validateDesign(value: unknown): Design {
       const p = `design.nails[${i}]`;
       const o = obj(n, p);
       str(o, 'id', p);
+      // The frozen nailLabels helper stores labels in a plain object.
+      if (o.id === '__proto__') throw new Invalid(`${p}.id cannot be the reserved name '__proto__'`);
       num(o, 'x', p);
       num(o, 'y', p);
     });
@@ -95,7 +97,24 @@ export function validateDesign(value: unknown): Design {
       str(o, 'id', p);
       str(o, 'edgeId', p);
       num(o, 't', p);
+      if (o.photo !== undefined) {
+        const photo = obj(o.photo, `${p}.photo`);
+        if (photo.dataUrl !== undefined) str(photo, 'dataUrl', `${p}.photo`);
+        if (photo.aspect !== undefined) {
+          num(photo, 'aspect', `${p}.photo`);
+          if ((photo.aspect as number) <= 0) throw new Invalid(`${p}.photo.aspect must be positive`);
+        }
+      }
     });
+
+    for (const key of ['groups', 'layers', 'nails', 'edges', 'pins']) {
+      const ids = new Set<string>();
+      for (const item of d[key] as Obj[]) {
+        const id = item.id as string;
+        if (ids.has(id)) throw new Invalid(`design.${key} contains duplicate id ${JSON.stringify(id)}`);
+        ids.add(id);
+      }
+    }
 
     num(d, 'mergeTolerance', 'design');
     const meta = obj(d.meta, 'design.meta');

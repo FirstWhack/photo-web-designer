@@ -22,8 +22,13 @@ function slim(d: Design): Design {
   };
 }
 
-const same = (a: Design, b: Design) =>
-  JSON.stringify([a.layers, a.nails, a.edges, a.groups]) === JSON.stringify([b.layers, b.nails, b.edges, b.groups]);
+const same = (a: Design, b: Design) => {
+  const content = (d: Design) => {
+    const { meta: _meta, ...rest } = slim(d);
+    return { ...rest, name: d.meta.name };
+  };
+  return JSON.stringify(content(a)) === JSON.stringify(content(b));
+};
 
 function load(): Variation[] {
   try {

@@ -84,6 +84,18 @@ describe('Walkthrough', () => {
     render(<Walkthrough resolved={triangle} plan={trianglePlan} storageKey="wt" />);
     expect(instr()).toMatch(/^Cut /);
   });
+
+  it('resets progress when measurements change without changing edge IDs', () => {
+    const { rerender } = render(<Walkthrough resolved={triangle} plan={trianglePlan} storageKey="wt" />);
+    next();
+    next();
+    const changed = structuredClone(trianglePlan);
+    changed.runs[0].cutLength += 20;
+    changed.runs[0].steps[0].length += 20;
+    rerender(<Walkthrough resolved={triangle} plan={changed} storageKey="wt" />);
+    expect(instr()).toMatch(/^Cut /);
+    expect(screen.getByRole('progressbar').getAttribute('aria-valuenow')).toBe('0');
+  });
 });
 
 describe('CutList', () => {

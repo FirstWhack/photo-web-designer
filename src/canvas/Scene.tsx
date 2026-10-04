@@ -32,6 +32,7 @@ import {
 } from './layers';
 import { flattenPlan, hitEdge, hitNail, hitPin, nailMap, pinAnchor, scoreColor, sizes, snapPoint } from './math';
 import s from './Scene.module.css';
+import { usePhotoSize } from './PhotoSize';
 
 /** Camera: wall coordinate at the viewport's top-left corner, and zoom in screen px per wall unit. */
 export interface View {
@@ -129,6 +130,7 @@ export function Scene(props: SceneProps) {
   } = props;
   const { wall } = resolved;
   const units = wall.units;
+  const photoSize = usePhotoSize(units);
   const rootRef = useRef<HTMLDivElement>(null);
   const uid = 'pw' + useId().replace(/[^a-zA-Z0-9_-]/g, '');
   const [size, setSize] = useState<Size>({ w: 800, h: 600 });
@@ -174,7 +176,7 @@ export function Scene(props: SceneProps) {
   }, [resolved.pins, edgesById, nails]);
   const tints = useMemo(() => {
     if (overlay !== 'photos' || !report) return null;
-    const out: Record<EdgeId, string> = {};
+    const out: Record<EdgeId, string> = Object.create(null);
     for (const e of resolved.edges) out[e.id] = scoreColor(report.edgeScore[e.id] ?? 0);
     return out;
   }, [overlay, report, resolved.edges]);
@@ -190,10 +192,16 @@ export function Scene(props: SceneProps) {
   const playing = !!(playback && steps);
 
   // Latest values for stable event handlers.
-  const latest = useRef({ view: camera, fitK, resolved, nails, edgesById, selection, tool, actions, snap, activeGroupId, chain, units });
-  latest.current = { view: camera, fitK, resolved, nails, edgesById, selection, tool, actions, snap, activeGroupId, chain, units };
+  const latest = useRef({ view: camera, fitK, resolved, nails, edgesById, selection, tool, actions, snap, activeGroupId, chain, units, photoSize });
+  latest.current = { view: camera, fitK, resolved, nails, edgesById, selection, tool, actions, snap, activeGroupId, chain, units, photoSize };
   const drag = useRef<Drag | null>(null);
   const hovering = useRef(false);
+
+  // Switching to Build can unmount the canvas during a drag. Never leave history paused.
+  useEffect(() => () => {
+    const d = drag.current;
+    if (d && (d.kind === 'nails' || d.kind === 'pin') && d.started) latest.current.actions?.endGesture();
+  }, []);
 
   // End a connect chain when the tool changes.
   useEffect(() => setChain(null), [tool]);
@@ -251,6 +259,8 @@ export function Scene(props: SceneProps) {
   const fit = () => {
     clearTimeout(commitTimer.current);
     live.current = null;
+    latest.current.view = fitView(size, wall);
+    syncTransform();
     setUserView(null);
   };
 
@@ -332,7 +342,7 @@ export function Scene(props: SceneProps) {
     const L = latest.current;
     const id = dataId(e, 'data-pin-id');
     if (id) return id;
-    return hitPin(L.resolved.pins, L.edgesById, L.nails, L.units, p, 2 / L.view.k);
+    return hitPin(L.resolved.pins, L.edgesById, L.nails, L.units, p, 2 / L.view.k, L.photoSize);
   }, []);
 
   const snapAt = useCallback((p: Vec2, exclude?: Set<NailId>) => {
@@ -671,7 +681,7 @@ export function Scene(props: SceneProps) {
           maxLoad={DEFAULT_ANALYZE_OPTIONS_IN.maxNailLoad}
           uid={uid}
         />
-        {showPins && <PinLayer pins={resolved.pins} anchors={anchors} units={units} selected={selection.pins} uid={uid} />}
+        {showPins && <PinLayer pins={resolved.pins} anchors={anchors} units={units} selected={selection.pins} uid={uid} photoSize={photoSize} />}
 
         {/* interaction overlay */}
         <g pointerEvents="none" data-layer="interaction">

@@ -3,7 +3,7 @@
  * All geometry goes through `@/lib/geom` so curves match planning and build output.
  */
 import type { Edge, EdgeId, Nail, NailId, Pin, PinId, Units, Vec2 } from '@/contracts/design';
-import type { BuildPlan, Step } from '@/contracts/plan';
+import type { BuildPlan, PhotoSpec, Step } from '@/contracts/plan';
 import type { SnapOptions } from '@/contracts/ui';
 import { clamp, lerp, pointOnSag, pointSegment, sagControl, sagPoints } from '@/lib/geom';
 import { createRng } from '@/lib/rng';
@@ -161,10 +161,11 @@ export function pinAnchor(pin: Pin, edges: Map<EdgeId, Edge>, nails: NailMap): V
 }
 
 /** Axis-aligned box of the hanging photo (ignores the small tilt), relative to the anchor. */
-export function photoBox(units: Units, aspect = 4 / 5) {
+export function photoBox(units: Units, aspect?: number, photo?: Pick<PhotoSpec, 'width' | 'height'>) {
   const s = sizes(units);
-  const pw = s.photoW;
-  const ph = pw / (aspect > 0 ? aspect : 0.8);
+  const pw = photo?.width ?? s.photoW;
+  const ratio = aspect !== undefined && Number.isFinite(aspect) && aspect > 0 ? aspect : photo ? photo.width / photo.height : 0.8;
+  const ph = pw / ratio;
   const w = pw + 2 * s.frameSide;
   const h = ph + s.frameSide + s.frameBottom;
   const top = s.pinLen * 0.45;
@@ -178,12 +179,13 @@ export function hitPin(
   units: Units,
   p: Vec2,
   tol: number,
+  photo?: Pick<PhotoSpec, 'width' | 'height'>,
 ): PinId | null {
   for (let i = pins.length - 1; i >= 0; i--) {
     const pin = pins[i];
     const at = pinAnchor(pin, edges, nails);
     if (!at) continue;
-    const box = photoBox(units, pin.photo?.aspect);
+    const box = photoBox(units, pin.photo?.aspect, photo);
     const dx = p.x - at.x;
     const dy = p.y - at.y;
     if (Math.hypot(dx, dy) <= tol + sizes(units).pinLen * 0.4) return pin.id;

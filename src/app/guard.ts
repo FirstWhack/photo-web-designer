@@ -1,5 +1,6 @@
 import type { DesignActions, Selection } from '@/contracts/actions';
 import type { Design, EdgeId, LayerId, NailId, ResolvedDesign } from '@/contracts/design';
+import type { ResolveDetail } from '@/model';
 
 export type Mode = 'explore' | 'refine' | 'build';
 
@@ -8,6 +9,19 @@ export interface GuardContext {
   resolved: ResolvedDesign;
   selection: Selection;
   mode: Mode;
+  nailLayers?: ReadonlyMap<NailId, ReadonlySet<LayerId>>;
+}
+
+/** Every live layer contributing to a nail, including merged-away members. */
+export function sharedNailLayers(detail: ResolveDetail): Map<NailId, Set<LayerId>> {
+  const result = new Map<NailId, Set<LayerId>>();
+  for (const [rawId, layerId] of detail.owner) {
+    const id = detail.alias[rawId] ?? rawId;
+    const layers = result.get(id) ?? new Set<LayerId>();
+    layers.add(layerId);
+    result.set(id, layers);
+  }
+  return result;
 }
 
 const lockedLayers = (d: Design) => new Set(d.layers.filter((l) => l.locked).map((l) => l.id));
@@ -36,7 +50,7 @@ export function guardActions(base: DesignActions, get: () => GuardContext): Desi
       const { nailLayer } = owners(ctx);
       const free = ids.filter((id) => {
         const l = nailLayer.get(id);
-        return !(l && locked.has(l));
+        return !(l && locked.has(l)) && ![...(ctx.nailLayers?.get(id) ?? [])].some((owner) => locked.has(owner));
       });
       if (!free.length) return;
       if (ctx.mode !== 'explore') {
@@ -74,7 +88,9 @@ export function guardActions(base: DesignActions, get: () => GuardContext): Desi
       if (ctx.mode === 'explore') for (const id of liveLayers(ctx.design)) blocked.add(id);
       const { nailLayer, edgeLayer } = owners(ctx);
       const ok = (l: LayerId | undefined) => !(l && blocked.has(l));
-      const nails = ctx.selection.nails.filter((id) => nailLayer.has(id) && ok(nailLayer.get(id)));
+      const nails = ctx.selection.nails.filter((id) =>
+        nailLayer.has(id) && ok(nailLayer.get(id)) && [...(ctx.nailLayers?.get(id) ?? [])].every(ok),
+      );
       const edges = ctx.selection.edges.filter((id) => edgeLayer.has(id) && ok(edgeLayer.get(id)));
       const pinIds = new Set(ctx.resolved.pins.map((p) => p.id));
       const pins = ctx.selection.pins.filter((id) => pinIds.has(id));

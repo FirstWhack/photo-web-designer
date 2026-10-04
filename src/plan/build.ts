@@ -284,7 +284,7 @@ export function planBuildImpl(resolved: ResolvedDesign, opts?: Partial<PlanOptio
   }
 
   const runs: Run[] = [];
-  const cutLengthByGroup: Record<GroupId, number> = {};
+  const cutLengthByGroup: Record<GroupId, number> = Object.create(null);
   let cutLength = 0;
   for (const g of groupOrder(resolved)) {
     const groupEdges = byGroup.get(g) ?? [];

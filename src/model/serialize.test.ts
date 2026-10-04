@@ -22,6 +22,18 @@ describe('serialize', () => {
     (bad2.layers[0].transform as unknown as Record<string, unknown>).rotation = 'x';
     expect(() => deserializeDesign(JSON.stringify(bad2))).toThrow(/layers\[0\]\.transform\.rotation/);
   });
+
+  it('rejects malformed photo metadata and duplicate object IDs before loading', () => {
+    const badPhoto = structuredClone(sampleDesign());
+    badPhoto.pins[0].photo = { aspect: -1 };
+    expect(() => deserializeDesign(serializeDesign(badPhoto))).toThrow(/photo.aspect must be positive/);
+    const duplicate = structuredClone(sampleDesign());
+    duplicate.nails.push({ ...duplicate.nails[0], x: 60 });
+    expect(() => deserializeDesign(serializeDesign(duplicate))).toThrow(/nails contains duplicate id/);
+    const reserved = structuredClone(sampleDesign());
+    reserved.nails[0].id = '__proto__';
+    expect(() => deserializeDesign(serializeDesign(reserved))).toThrow(/reserved name/);
+  });
 });
 
 describe('share links', () => {

@@ -425,6 +425,7 @@ const PinView = memo(function PinView({
   units,
   dataUrl,
   aspect,
+  photoSize,
   selected,
   uid,
 }: {
@@ -434,11 +435,12 @@ const PinView = memo(function PinView({
   units: Units;
   dataUrl?: string;
   aspect?: number;
+  photoSize?: { width: number; height: number };
   selected: boolean;
   uid: string;
 }) {
   const z = sizes(units);
-  const box = photoBox(units, aspect);
+  const box = photoBox(units, aspect, photoSize);
   const tilt = pinTilt(id);
   const clipY = box.y;
   const pw = z.pinW;
@@ -485,12 +487,14 @@ export const PinLayer = memo(function PinLayer({
   units,
   selected,
   uid,
+  photoSize,
 }: {
   pins: Pin[];
   anchors: Map<string, { x: number; y: number }>;
   units: Units;
   selected: string[];
   uid: string;
+  photoSize?: { width: number; height: number };
 }) {
   const sel = new Set(selected);
   return (
@@ -506,6 +510,7 @@ export const PinLayer = memo(function PinLayer({
             units={units}
             dataUrl={p.photo?.dataUrl}
             aspect={p.photo?.aspect}
+            photoSize={photoSize}
             selected={sel.has(p.id)}
             uid={uid}
           />

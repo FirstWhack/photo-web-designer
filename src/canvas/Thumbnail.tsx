@@ -3,6 +3,7 @@ import type { ThumbnailProps } from '@/contracts/ui';
 import { pointOnSag, sagPath } from '@/lib/geom';
 import { nailMap, shade, sizes, twineWidth } from './math';
 import s from './Thumbnail.module.css';
+import { usePhotoSize } from './PhotoSize';
 
 /**
  * Static, read-only preview: one path per twine colour, one path for all nails,
@@ -10,6 +11,7 @@ import s from './Thumbnail.module.css';
  */
 export const Thumbnail = memo(function Thumbnail({ resolved, width }: ThumbnailProps) {
   const { wall } = resolved;
+  const photoSize = usePhotoSize(wall.units);
   const height = (width * wall.height) / Math.max(1e-6, wall.width);
   const k = width / Math.max(1e-6, wall.width); // px per wall unit
 
@@ -35,7 +37,7 @@ export const Thumbnail = memo(function Thumbnail({ resolved, width }: ThumbnailP
     for (const n of resolved.nails) nd += `M${n.x - r} ${n.y}a${r} ${r} 0 1 0 ${2 * r} 0a${r} ${r} 0 1 0 ${-2 * r} 0`;
 
     const edges = new Map(resolved.edges.map((e) => [e.id, e]));
-    const photo = sizes(wall.units).photoW;
+    const photo = photoSize?.width ?? sizes(wall.units).photoW;
     let pd = '';
     for (const p of resolved.pins) {
       const e = edges.get(p.edgeId);
@@ -43,10 +45,11 @@ export const Thumbnail = memo(function Thumbnail({ resolved, width }: ThumbnailP
       const b = e && nails.get(e.b);
       if (!e || !a || !b) continue;
       const { x, y } = pointOnSag(a, b, e.sag, p.t);
-      pd += `M${x - photo / 2} ${y + 0.3}h${photo}v${photo * 1.2}h${-photo}Z`;
+      const photoHeight = p.photo?.aspect ? photo / p.photo.aspect : photoSize?.height ?? photo * 1.2;
+      pd += `M${x - photo / 2} ${y + 0.3}h${photo}v${photoHeight}h${-photo}Z`;
     }
     return { groups, nd, pd };
-  }, [resolved, wall.units, k]);
+  }, [resolved, wall.units, k, photoSize]);
 
   const minW = 0.9 / k;
   return (
