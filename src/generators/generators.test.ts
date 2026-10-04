@@ -71,6 +71,7 @@ function randomParam(d: ParamDef, rng: ReturnType<typeof createRng>) {
 describe('registry', () => {
   it('lists every generator in order', () => {
     expect(registry.list().map((g) => g.id)).toEqual([
+      'frame',
       'spider-web',
       'string-art',
       'star',
@@ -103,7 +104,14 @@ describe('registry', () => {
       const t = g.suggestTransform!(wall);
       expect(t.x).toBeCloseTo(36);
       expect(t.rotation).toBe(0);
-      if (g.id === 'swag') {
+      if (g.id === 'frame') {
+        // Landscape 3:2 on a landscape wall, slightly above centre, inside a 6-unit margin.
+        expect(t.scaleX / t.scaleY).toBeCloseTo(1.5);
+        expect(t.scaleX).toBeCloseTo(0.3 * 72);
+        expect(t.y).toBeLessThan(24);
+        expect(t.y - t.scaleY).toBeGreaterThanOrEqual(6);
+        expect(t.y + t.scaleY).toBeLessThanOrEqual(48 - 6);
+      } else if (g.id === 'swag') {
         expect(t.scaleX).toBeGreaterThan(t.scaleY);
         expect(t.y).toBeLessThan(24);
       } else {
@@ -125,7 +133,7 @@ for (const g of registry.list()) {
 
     it('schema corners are valid', () => {
       for (const p of corners(g)) checkDeterministic(g, p, 42);
-    });
+    }, 60_000); // the frame generator has ~500 select/bool combinations
 
     it('random params over 20 seeds are valid', () => {
       const rng = createRng(1234 + g.id.length);
@@ -180,5 +188,121 @@ describe('known shapes', () => {
   it('swag edges droop', () => {
     const out = registry.get('swag')!.generate({}, 1);
     expect(out.edges.every((e) => (e.sag ?? 0) >= 0.5)).toBe(true);
+  });
+});
+
+describe('frame shapes', () => {
+  const frame = registry.get('frame')!;
+  const degrees = (out: GeneratorOutput) => {
+    const deg = new Array<number>(out.nails.length).fill(0);
+    for (const e of out.edges) {
+      deg[e.a]++;
+      deg[e.b]++;
+    }
+    return deg;
+  };
+  /** Interior horizontal line spanning the full width (not part of the outline). */
+  const isRow = (out: GeneratorOutput, e: { a: number; b: number }) => {
+    const p = out.nails[e.a], q = out.nails[e.b];
+    return Math.abs(p.y - q.y) < 1e-9 && Math.abs(p.x - q.x) > 1.99 && Math.abs(p.y) < 0.999;
+  };
+
+  it('a 5 × 3 border has 12 nails and 12 edges', () => {
+    const out = frame.generate({ pattern: 'border', nailsX: 5, nailsY: 3 }, 1);
+    expect(out.nails).toHaveLength(12);
+    expect(out.edges).toHaveLength(12);
+    expect(degrees(out).every((d) => d === 2)).toBe(true);
+  });
+
+  it('defaults are photo rows: 5 drooping lines inside a taut outline', () => {
+    const d = registry.defaults('frame');
+    expect(d.pattern).toBe('rows');
+    expect(d.outline).toBe(true);
+    const out = frame.generate({}, 1);
+    const rows = out.edges.filter((e) => isRow(out, e));
+    expect(rows).toHaveLength(5);
+    expect(rows.every((e) => (e.sag ?? 0) >= 0.05 && (e.sag ?? 0) <= 0.15)).toBe(true);
+    // the rest is the outline: 2·9 + 2·7 − 4 = 28 ring edges, all taut
+    expect(out.edges).toHaveLength(5 + 28);
+    expect(out.edges.filter((e) => !rows.includes(e)).every((e) => e.sag === 0)).toBe(true);
+  });
+
+  it('rows with nailsY = 7 give 5 horizontal lines plus the outline', () => {
+    const out = frame.generate({ pattern: 'rows', nailsX: 4, nailsY: 7 }, 1);
+    expect(out.edges.filter((e) => isRow(out, e))).toHaveLength(5);
+    expect(out.edges).toHaveLength(5 + (2 * 4 + 2 * 7 - 4));
+  });
+
+  it('never duplicates corner nails', () => {
+    for (const pattern of ['border', 'rows', 'grid', 'zigzag', 'diamond', 'corners', 'string-art', 'nested'])
+      for (const [nailsX, nailsY] of [
+        [2, 2],
+        [5, 3],
+        [9, 7],
+        [40, 40],
+      ]) {
+        const out = frame.generate({ pattern, nailsX, nailsY }, 1);
+        for (const cx of [-1, 1])
+          for (const cy of [-1, 1])
+            expect(out.nails.filter((p) => Math.hypot(p.x - cx, p.y - cy) < 1e-6)).toHaveLength(1);
+        if (pattern === 'border') expect(out.nails).toHaveLength(2 * nailsX + 2 * nailsY - 4);
+      }
+  });
+
+  it('the sunburst centre-nail anchor has degree = total − 1', () => {
+    for (const outline of [true, false]) {
+      const out = frame.generate({ pattern: 'sunburst', anchor: 'centre-nail', nailsX: 8, nailsY: 6, outline }, 1);
+      const hub = out.nails.findIndex((p) => p.x === 0 && p.y === 0);
+      expect(hub).toBeGreaterThanOrEqual(0);
+      expect(degrees(out)[hub]).toBe(out.nails.length - 1);
+    }
+  });
+
+  it('an edge sunburst starts at the exact centre and rays to every nail off its own side', () => {
+    for (const nailsX of [8, 9]) {
+      const out = frame.generate({ pattern: 'sunburst', anchor: 'top-centre', nailsX, nailsY: 6 }, 1);
+      const hub = out.nails.findIndex((p) => Math.abs(p.x) < 1e-9 && p.y === -1);
+      expect(hub).toBeGreaterThanOrEqual(0);
+      const offSide = out.nails.filter((p) => p.y > -1).length;
+      // plus its two neighbours along the top, via the outline
+      expect(degrees(out)[hub]).toBe(offSide + 2);
+    }
+  });
+
+  it('accent patterns with the same counts reuse the perimeter nails', () => {
+    const base = frame.generate({ pattern: 'rows', nailsX: 9, nailsY: 7 }, 1);
+    for (const pattern of ['corners', 'diamond', 'grid', 'string-art']) {
+      const acc = frame.generate({ pattern, nailsX: 9, nailsY: 7, outline: false }, 1);
+      expect(acc.edges.length).toBeGreaterThan(4);
+      for (const p of acc.nails) expect(base.nails.some((q) => Math.hypot(p.x - q.x, p.y - q.y) < 1e-9)).toBe(true);
+    }
+  });
+
+  it('nested adds an inner rectangle with spokes; geometric patterns are taut, garlands droop', () => {
+    const out = frame.generate({ pattern: 'nested', nailsX: 6, nailsY: 5, insetSize: 0.5 }, 1);
+    const inner = out.nails.filter((p) => Math.max(Math.abs(p.x), Math.abs(p.y)) < 0.51);
+    expect(inner).toHaveLength(2 * 6 + 2 * 5 - 4);
+    expect(out.edges.length).toBe(2 * 18 + 18);
+    for (const pattern of ['border', 'columns', 'grid', 'diamond', 'corners', 'sunburst', 'string-art', 'nested'])
+      expect(frame.generate({ pattern }, 1).edges.every((e) => e.sag === 0)).toBe(true);
+    const zig = frame.generate({ pattern: 'zigzag', tiers: 3, outline: false }, 1);
+    expect(zig.edges.every((e) => (e.sag ?? 0) >= 0.05 && (e.sag ?? 0) <= 0.15)).toBe(true);
+  });
+
+  it('suggestTransform fits portrait, square and metric walls with a 6-unit margin', () => {
+    for (const wall of [
+      { width: 36, height: 60, units: 'in' as const },
+      { width: 48, height: 48, units: 'in' as const },
+      { width: 300, height: 200, units: 'cm' as const },
+    ]) {
+      const t = frame.suggestTransform!(wall);
+      expect(t.x).toBeCloseTo(wall.width / 2);
+      expect(t.y).toBeLessThanOrEqual(wall.height / 2);
+      expect(t.x - t.scaleX).toBeGreaterThanOrEqual(6 - 1e-9);
+      expect(t.y - t.scaleY).toBeGreaterThanOrEqual(6 - 1e-9);
+      expect(t.y + t.scaleY).toBeLessThanOrEqual(wall.height - 6 + 1e-9);
+      if (wall.width > wall.height) expect(t.scaleX).toBeGreaterThan(t.scaleY);
+      else expect(t.scaleY).toBeGreaterThan(t.scaleX);
+    }
   });
 });
