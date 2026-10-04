@@ -1,0 +1,358 @@
+/* ── shared bits ─────────────────────────────────────── */
+.h2 {
+  font-size: 18px;
+  margin: 0 0 8px;
+}
+.muted {
+  color: var(--text-muted);
+}
+.strong {
+  font-weight: 600;
+}
+.nowrap {
+  white-space: nowrap;
+}
+.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.swatch {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  margin-right: 6px;
+  vertical-align: -2px;
+  flex: none;
+}
+.btn {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 8px;
+  padding: 8px 14px;
+  cursor: pointer;
+  min-height: 40px;
+}
+.btn:hover {
+  background: var(--surface-2);
+}
+.linkBtn {
+  background: none;
+  border: none;
+  color: var(--accent);
+  padding: 8px 4px;
+  cursor: pointer;
+  text-decoration: underline;
+  min-height: 40px;
+}
+.empty {
+  color: var(--text-muted);
+  padding: 24px;
+  text-align: center;
+}
+
+/* ── walkthrough ─────────────────────────────────────── */
+.walk {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 560px;
+  min-width: 0;
+  width: 100%;
+  margin: 0 auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 16px;
+}
+.walkHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+}
+.walkRun {
+  font-weight: 700;
+  font-size: 16px;
+}
+.walkGroup {
+  display: flex;
+  align-items: center;
+  color: var(--text-muted);
+}
+.walkCut {
+  margin-left: auto;
+  font-size: 15px;
+}
+.walkCut strong {
+  font-size: 18px;
+}
+.progress {
+  height: 10px;
+  background: var(--surface-2);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.progressFill {
+  height: 100%;
+  background: var(--ok);
+  transition: width 0.25s ease;
+}
+.progressText {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: -6px;
+}
+.card {
+  border: 2px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 16px;
+  background: var(--bg);
+  min-height: 150px;
+}
+.cardDone {
+  border-color: var(--ok);
+}
+.cardKicker {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+.cardMain {
+  font-size: clamp(22px, 6vw, 30px);
+  line-height: 1.2;
+  font-weight: 700;
+  margin: 6px 0;
+}
+.cardHint {
+  margin: 8px 0 0;
+  color: var(--text-muted);
+  font-size: 15px;
+}
+.stepRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.chipWarn {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--warn) 22%, transparent);
+  border: 1px solid var(--warn);
+  font-size: 13px;
+  font-weight: 600;
+}
+.glyph {
+  flex: none;
+}
+.glyphStroke {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.glyphNail {
+  fill: var(--nail);
+}
+.glyphKnot {
+  fill: var(--accent);
+}
+.walkMap {
+  max-height: 42vh;
+}
+.nav {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 10px;
+}
+.navBtn {
+  min-height: 60px;
+  font-size: 18px;
+  font-weight: 600;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.navBtn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.navNext {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.walkFoot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 16px;
+  font-size: 13px;
+}
+.wake {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+}
+.keysHint {
+  margin-left: auto;
+  color: var(--text-muted);
+}
+@media (hover: none) {
+  .keysHint {
+    display: none;
+  }
+}
+
+/* ── minimap ─────────────────────────────────────────── */
+.minimap {
+  display: block;
+  width: 100%;
+  height: auto;
+  background: var(--wall);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+.mapWall {
+  fill: none;
+  stroke: var(--border);
+  stroke-dasharray: 1 1;
+  vector-effect: non-scaling-stroke;
+}
+.mapNail {
+  fill: var(--nail);
+}
+.mapRing {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2.5;
+}
+.mapCurrentGlow {
+  stroke: color-mix(in srgb, var(--accent) 35%, transparent);
+}
+.mapLabel {
+  fill: var(--text-muted);
+  font-family: var(--font);
+}
+.mapLabelHot {
+  fill: var(--accent);
+  font-weight: 700;
+  font-family: var(--font);
+}
+
+/* ── tables (cut list, coords) ───────────────────────── */
+.cutList,
+.coords {
+  min-width: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  box-shadow: var(--shadow);
+}
+.tableWrap {
+  overflow-x: auto;
+}
+.table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 14px;
+}
+.table th,
+.table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+.table th.num,
+.table td.num {
+  text-align: right;
+}
+.table thead th {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+.table tfoot td {
+  background: var(--surface-2);
+}
+.grand td {
+  font-weight: 700;
+}
+.seq {
+  font-size: 12px;
+  color: var(--text-muted);
+  max-width: 280px;
+}
+.shop {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 12px;
+  display: grid;
+  gap: 10px;
+}
+.shop li {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+.shop input {
+  margin-top: 3px;
+}
+.optional {
+  padding-left: 24px;
+}
+.tableWrap + .h2 {
+  margin-top: 20px;
+}
+.coordsHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.howto {
+  margin: 0 0 12px;
+  padding-left: 20px;
+  color: var(--text-muted);
+}
+
+@media print {
+  .noPrint {
+    display: none !important;
+  }
+  .printable {
+    box-shadow: none;
+    border: none;
+    padding: 0;
+    background: #fff;
+    color: #000;
+  }
+  .printable .table th,
+  .printable .table td {
+    border-color: #999;
+  }
+  .printable .table tfoot td {
+    background: #eee;
+  }
+  .printable tr {
+    break-inside: avoid;
+  }
+  .swatch {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+}
