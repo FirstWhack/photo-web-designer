@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { alignDelta, fillWallSize, orient, overflow, presetSize, shapeOf, sizeOf, sizePresets, transformBounds, withSize, photoSpec } from './sizing';
+import { alignDelta, contentBounds, fillTransform, fillWallSize, orient, overflow, presetSize, shapeOf, sizeOf, sizePresets, transformBounds, withSize, photoSpec } from './sizing';
 import { coverPlacement } from './WallDialog';
 
 const wall = { width: 72, height: 48, units: 'in' as const };
@@ -44,5 +44,26 @@ describe('sizing', () => {
     expect(p.height).toBeCloseTo(48);
     expect(p.width).toBeCloseTo(96);
     expect(p.x).toBeCloseTo(-12);
+  });
+});
+
+describe('fillTransform', () => {
+  const circle = Array.from({ length: 24 }, (_, i) => ({ x: 0.7 * Math.cos((i / 24) * 2 * Math.PI), y: 0.7 * Math.sin((i / 24) * 2 * Math.PI) }));
+  it('fills the wall margin box with the actual content, centred', () => {
+    const t = fillTransform({ x: 5, y: 5, scaleX: 3, scaleY: 3, rotation: 0 }, circle, wall);
+    const b = contentBounds(t, circle)!;
+    expect(b.minX).toBeCloseTo(6);
+    expect(b.maxX).toBeCloseTo(66);
+    expect(b.minY).toBeCloseTo(6);
+    expect(b.maxY).toBeCloseTo(42);
+  });
+  it('stays inside the margin box and centred when rotated', () => {
+    const pts = [{ x: -1, y: -0.3 }, { x: 1, y: 0.3 }, { x: -1, y: 0.3 }, { x: 1, y: -0.3 }];
+    const t = fillTransform({ x: 0, y: 0, scaleX: 1, scaleY: 1, rotation: 30 }, pts, wall);
+    const b = contentBounds(t, pts)!;
+    expect(b.minX).toBeGreaterThan(5.9);
+    expect(b.maxX).toBeLessThan(66.1);
+    expect((b.minX + b.maxX) / 2).toBeCloseTo(36);
+    expect((b.minY + b.maxY) / 2).toBeCloseTo(24);
   });
 });

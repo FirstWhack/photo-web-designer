@@ -45,6 +45,7 @@ import {
   ViewOptions,
   WallDialog,
   cx,
+  fillTransform,
   photoSpec,
   toolHelp,
   wallLabel,
@@ -218,10 +219,11 @@ export function App({ store: injected, registry = defaultRegistry }: AppProps) {
   }, [actions, registry, store, variations]);
 
   const addPattern = useCallback(
-    (generatorId: string, size: Size | null) => {
+    (generatorId: string, size: Size | null, fill = false) => {
       const gen = registry.get(generatorId);
       const wall = store.getState().design.wall;
       let transform;
+      const seed = randomSeed();
       if (size) {
         let base;
         try {
@@ -230,8 +232,16 @@ export function App({ store: injected, registry = defaultRegistry }: AppProps) {
           base = undefined;
         }
         transform = { x: wall.width / 2, y: wall.height / 2, rotation: base?.rotation ?? 0, scaleX: size.w / 2, scaleY: size.h / 2 };
+        if (fill && gen) {
+          // Size by the pattern's real nails so "Fill wall" fills and centres the visible result.
+          try {
+            transform = fillTransform(transform, gen.generate(registry.defaults(generatorId), seed).nails, wall);
+          } catch {
+            /* keep the box-based size */
+          }
+        }
       }
-      const id = actions.addLayer({ generatorId, ...(transform ? { transform } : {}) });
+      const id = actions.addLayer({ generatorId, seed, ...(transform ? { transform } : {}) });
       setSelectedLayerId(id);
       setMode((m) => (m === 'build' ? 'explore' : m));
       if (narrow) setDrawer('right');

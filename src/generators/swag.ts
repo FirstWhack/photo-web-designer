@@ -76,7 +76,7 @@ function generate(params: ParamValues) {
 }
 
 export function swagTransform(wall: Wall) {
-  return { x: wall.width / 2, y: wall.height * 0.3, scaleX: 0.45 * wall.width, scaleY: 0.2 * wall.height, rotation: 0 };
+  return { x: wall.width / 2, y: wall.height / 2, scaleX: 0.45 * wall.width, scaleY: 0.3 * wall.height, rotation: 0 };
 }
 
 export const swag: Generator = {

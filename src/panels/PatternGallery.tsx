@@ -17,7 +17,7 @@ export interface PatternGalleryProps {
   previews: Record<string, ResolvedDesign | undefined>;
   wall: Pick<Wall, 'width' | 'height' | 'units'>;
   /** size null = the generator's suggested size. */
-  onAdd: (generatorId: string, size: Size | null) => void;
+  onAdd: (generatorId: string, size: Size | null, fill?: boolean) => void;
   thumbWidth?: number;
 }
 
@@ -36,9 +36,9 @@ export function PatternGallery({ items, previews, wall, onAdd, thumbWidth = 112 
   const presets = sizePresets(wall.units);
   const openItem = items.find((i) => i.id === open);
 
-  const add = (size: Size | null) => {
+  const add = (size: Size | null, fill = false) => {
     if (!open) return;
-    onAdd(open, size);
+    onAdd(open, size, fill);
     setOpen(null);
   };
 
@@ -88,11 +88,9 @@ export function PatternGallery({ items, previews, wall, onAdd, thumbWidth = 112 
                 </Chip>
               );
             })}
-            {shape !== 'square' && (
-              <Chip onClick={() => add(fillWallSize(wall))} title="Fill the wall, keeping a margin at the edges">
-                Fill wall
-              </Chip>
-            )}
+            <Chip onClick={() => add(fillWallSize(wall), true)} title="Fill the wall, keeping a margin at the edges">
+              Fill wall
+            </Chip>
           </Chips>
           <Button size="small" variant="ghost" onClick={() => add(null)}>
             Use suggested size

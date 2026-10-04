@@ -8,7 +8,8 @@ import { ParamPanel } from './ParamPanel';
 import { usesSeed, visibleParams } from './paramVisibility';
 import {
   alignDelta,
-  fillWallSize,
+  contentBounds,
+  fillTransform,
   formatSize,
   orient,
   overflow,
@@ -68,12 +69,13 @@ export function LayerInspector(props: LayerInspectorProps) {
   const size = sizeOf(t);
   const shape = shapeOf(size, 0.002);
   const [lockAspect, setLockAspect] = useState(true);
-  const hasDefaultSag = useMemo(() => {
-    if (!generator) return false;
+  const { hasDefaultSag, local } = useMemo(() => {
+    if (!generator) return { hasDefaultSag: false, local: [] as { x: number; y: number }[] };
     try {
-      return generator.generate(layer.params, layer.seed).edges.some((e) => e.sag === undefined);
+      const out = generator.generate(layer.params, layer.seed);
+      return { hasDefaultSag: out.edges.some((e) => e.sag === undefined), local: out.nails };
     } catch {
-      return false;
+      return { hasDefaultSag: false, local: [] as { x: number; y: number }[] };
     }
   }, [generator, layer.params, layer.seed]);
   const g = { onGestureStart, onGestureEnd };
@@ -92,7 +94,7 @@ export function LayerInspector(props: LayerInspectorProps) {
     setSize(lockAspect && size.h > 0 ? { w: (h * size.w) / size.h, h } : { w: size.w, h });
   };
 
-  const box = bounds ?? transformBounds(t);
+  const box = bounds ?? contentBounds(t, local) ?? transformBounds(t);
   const out = overflow(box, wall);
   const align = (ax?: AlignX, ay?: AlignY) => {
     const { dx, dy } = alignDelta(box, wall, ax, ay);
@@ -100,7 +102,8 @@ export function LayerInspector(props: LayerInspectorProps) {
   };
 
   const presets = sizePresets(units);
-  const fill = fillWallSize(wall);
+  const fillT = fillTransform(t, local, wall);
+  const filled = near(fillT.scaleX, t.scaleX) && near(fillT.scaleY, t.scaleY) && near(fillT.x, t.x) && near(fillT.y, t.y);
   const orientFor = shape === 'square' ? 'landscape' : shape;
 
   return (
@@ -175,8 +178,8 @@ export function LayerInspector(props: LayerInspectorProps) {
             );
           })}
           <Chip
-            pressed={near(fill.w, size.w) && near(fill.h, size.h)}
-            onClick={() => onUpdate({ transform: { ...withSize(t, fill), x: wall.width / 2, y: wall.height / 2 } })}
+            pressed={filled}
+            onClick={() => onUpdate({ transform: fillT })}
             title={`Fill the wall, keeping ${formatLength(units === 'cm' ? 15 : 6, units)} clear at the edges`}
           >
             Fill wall
@@ -205,7 +208,14 @@ export function LayerInspector(props: LayerInspectorProps) {
             </div>
           </Field>
         </div>
-        <Range label="Overall size" value={size.w} min={fine} max={Math.max(maxDim, size.w)} step={fine} onChange={(w) => setSize({ w, h: size.w > 0 ? (w * size.h) / size.w : w })} {...g} />
+        {lockAspect || shape === 'square' ? (
+          <Range label="Overall size" value={size.w} min={fine} max={Math.max(maxDim, size.w)} step={fine} onChange={(w) => setSize({ w, h: size.w > 0 ? (w * size.h) / size.w : w })} {...g} />
+        ) : (
+          <>
+            <Range label="Width" value={size.w} min={fine} max={Math.max(maxDim, size.w)} step={fine} onChange={setW} {...g} />
+            <Range label="Height" value={size.h} min={fine} max={Math.max(maxDim, size.h)} step={fine} onChange={setH} {...g} />
+          </>
+        )}
       </Section>
 
       <Section title="Position">

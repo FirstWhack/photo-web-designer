@@ -294,18 +294,14 @@ export function frameTransform(wall: Wall): LayerTransform {
   const margin = 6;
   const landscape = W > H;
   const aspect = landscape ? 3 / 2 : 2 / 3; // width / height
-  let w = Math.min(0.6 * W, Math.max(W - 2 * margin, 0.3 * W));
+  let w = Math.min(0.75 * W, Math.max(W - 2 * margin, 0.3 * W));
   let h = w / aspect;
   const maxH = Math.max(H - 2 * margin, 0.3 * H);
   if (h > maxH) {
     h = maxH;
     w = h * aspect;
   }
-  const hh = h / 2;
-  const lo = Math.min(hh + margin, H / 2);
-  const hi = Math.max(H - margin - hh, H / 2);
-  const y = clamp(0.45 * H, lo, hi);
-  return { x: W / 2, y, scaleX: w / 2, scaleY: hh, rotation: 0 };
+  return { x: W / 2, y: H / 2, scaleX: w / 2, scaleY: h / 2, rotation: 0 };
 }
 
 export const frame: Generator = {

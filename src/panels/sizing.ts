@@ -4,6 +4,7 @@
  */
 import type { LayerTransform, Units, Wall } from '@/contracts/design';
 import type { PhotoSpec } from '@/contracts/plan';
+import { applyTransform, bbox } from '@/lib/geom';
 import { convert, formatLength } from '@/lib/units';
 
 export type Shape = 'square' | 'landscape' | 'portrait';
@@ -111,6 +112,39 @@ export function alignDelta(b: Bounds, wall: Pick<Wall, 'width' | 'height' | 'uni
 /** How far (wall units) `b` pokes outside the wall, 0 if inside. */
 export function overflow(b: Bounds, wall: Pick<Wall, 'width' | 'height'>, eps = 1e-6): number {
   return Math.max(0, -b.minX - eps, -b.minY - eps, b.maxX - wall.width - eps, b.maxY - wall.height - eps);
+}
+
+type P = { x: number; y: number };
+
+/** Wall-space bounds of generator output (local −1..1 points) under a transform; null when empty. */
+export function contentBounds(t: LayerTransform, local: P[]): Bounds | null {
+  return bbox(local.map((p) => applyTransform(p, t)));
+}
+
+/**
+ * Transform that makes the pattern's actual nails fill the wall (minus margin), centred.
+ * Patterns rarely touch the ±1 box (a circle's nails sit inside it), so sizing by the box alone
+ * leaves the result small and off-centre. Keeps rotation and the sign of the scales.
+ */
+export function fillTransform(t: LayerTransform, local: P[], wall: Pick<Wall, 'width' | 'height' | 'units'>): LayerTransform {
+  const target = fillWallSize(wall);
+  let cur: LayerTransform = { ...t, scaleX: (Math.sign(t.scaleX) || 1) * (target.w / 2), scaleY: (Math.sign(t.scaleY) || 1) * (target.h / 2) };
+  if (local.length < 2) return { ...cur, x: wall.width / 2, y: wall.height / 2 };
+  // Rotation couples the axes, so refine a few times (exact in one pass when unrotated).
+  for (let i = 0; i < 6; i++) {
+    const b = contentBounds({ ...cur, x: 0, y: 0 }, local);
+    if (!b) break;
+    const w = b.maxX - b.minX;
+    const h = b.maxY - b.minY;
+    cur = {
+      ...cur,
+      scaleX: w > 1e-9 ? cur.scaleX * (target.w / w) : cur.scaleX,
+      scaleY: h > 1e-9 ? cur.scaleY * (target.h / h) : cur.scaleY,
+    };
+  }
+  const b = contentBounds({ ...cur, x: 0, y: 0 }, local);
+  if (!b) return { ...cur, x: wall.width / 2, y: wall.height / 2 };
+  return { ...cur, x: wall.width / 2 - (b.minX + b.maxX) / 2, y: wall.height / 2 - (b.minY + b.maxY) / 2 };
 }
 
 export function formatSize(size: Size, units: Units): string {

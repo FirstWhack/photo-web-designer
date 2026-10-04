@@ -105,15 +105,15 @@ describe('registry', () => {
       expect(t.x).toBeCloseTo(36);
       expect(t.rotation).toBe(0);
       if (g.id === 'frame') {
-        // Landscape 3:2 on a landscape wall, slightly above centre, inside a 6-unit margin.
+        // Landscape 3:2 on a landscape wall, centred, inside a 6-unit margin.
         expect(t.scaleX / t.scaleY).toBeCloseTo(1.5);
-        expect(t.scaleX).toBeCloseTo(0.3 * 72);
-        expect(t.y).toBeLessThan(24);
+        expect(t.scaleX).toBeCloseTo(0.375 * 72);
+        expect(t.y).toBeCloseTo(24);
         expect(t.y - t.scaleY).toBeGreaterThanOrEqual(6);
         expect(t.y + t.scaleY).toBeLessThanOrEqual(48 - 6);
       } else if (g.id === 'swag') {
         expect(t.scaleX).toBeGreaterThan(t.scaleY);
-        expect(t.y).toBeLessThan(24);
+        expect(t.y).toBeCloseTo(24);
       } else {
         expect(t.y).toBeCloseTo(24);
         expect(t.scaleX).toBeCloseTo(0.38 * 48);
