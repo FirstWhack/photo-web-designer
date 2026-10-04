@@ -1,0 +1,79 @@
+// @vitest-environment jsdom
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { emptyDesign } from '@/contracts/defaults';
+import { createDesignStore } from '@/model';
+import { registry } from '@/generators';
+import { App } from './App';
+
+const makeStore = () => createDesignStore({ registry, initial: emptyDesign(), storageKey: null });
+const stat = (name: string) => document.querySelector(`[data-stat="${name}"]`)?.textContent ?? '';
+/** The top-bar Surprise button (the empty state has a second one). */
+const surpriseButton = () => document.querySelector('header')!.querySelector('button[aria-label="Surprise me"]')!;
+
+beforeEach(() => localStorage.clear());
+afterEach(cleanup);
+
+// Whole-app renders are slow on a cold transform cache; don't flake on the 5 s default.
+describe('App', { timeout: 30_000 }, () => {
+  it('boots with an empty design and shows the empty state', () => {
+    render(<App store={makeStore()} />);
+    expect(screen.getByTestId('empty-state')).toBeTruthy();
+    expect(screen.getByText('Start with a rectangle frame')).toBeTruthy();
+    expect(stat('nails')).toBe('0 nails');
+    expect(screen.getByText(/72" × 48" wall/)).toBeTruthy();
+  });
+
+  it('Surprise me adds layers and updates the stats chip', async () => {
+    const store = makeStore();
+    render(<App store={store} />);
+    await act(async () => fireEvent.click(surpriseButton()));
+    expect(store.getState().design.layers.length).toBeGreaterThan(0);
+    expect(screen.queryByTestId('empty-state')).toBeNull();
+    expect(stat('nails')).not.toBe('0 nails');
+    expect(stat('runs')).not.toMatch(/^0 /);
+    // the surprise was snapshotted into the variations strip
+    expect(screen.getAllByRole('listitem', { name: /Restore/ })).toHaveLength(1);
+  });
+
+  it('undo works after Surprise', async () => {
+    const store = makeStore();
+    render(<App store={store} />);
+    await act(async () => fireEvent.click(surpriseButton()));
+    expect(store.getState().design.layers.length).toBeGreaterThan(0);
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: /^Undo/ })));
+    expect(store.getState().design.layers).toHaveLength(0);
+    expect(screen.getByTestId('empty-state')).toBeTruthy();
+    // and the keyboard shortcut redoes it
+    await act(async () => fireEvent.keyDown(document.body, { key: 'z', ctrlKey: true, shiftKey: true }));
+    expect(store.getState().design.layers.length).toBeGreaterThan(0);
+  });
+
+  it('starts a rectangle frame from the empty state', async () => {
+    const store = makeStore();
+    render(<App store={store} />);
+    await act(async () => fireEvent.click(screen.getByText('Start with a rectangle frame')));
+    expect(store.getState().design.layers.map((l) => l.generatorId)).toEqual(['frame']);
+    // the inspector shows real-world size, not raw scale
+    expect(screen.getByText('Size on the wall')).toBeTruthy();
+  });
+
+  it('adds a pattern at a preset size from the gallery in two clicks', async () => {
+    const store = makeStore();
+    const { container } = render(<App store={store} />);
+    await act(async () => fireEvent.click(container.querySelector('[data-generator="frame"]')!));
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: '36 × 24″' })));
+    const [layer] = store.getState().design.layers;
+    expect(layer.transform.scaleX * 2).toBe(36);
+    expect(layer.transform.scaleY * 2).toBe(24);
+  });
+
+  it('Refine mode switches tools with keyboard shortcuts', async () => {
+    render(<App store={makeStore()} />);
+    await act(async () => fireEvent.click(screen.getByRole('tab', { name: 'Refine' })));
+    await act(async () => fireEvent.keyDown(document.body, { key: 'n' }));
+    expect(screen.getByRole('button', { name: 'Add nail (N)' }).getAttribute('aria-pressed')).toBe('true');
+    await act(async () => fireEvent.keyDown(document.body, { key: 'c' }));
+    expect(screen.getByRole('button', { name: 'Connect (C)' }).getAttribute('aria-pressed')).toBe('true');
+  });
+});
