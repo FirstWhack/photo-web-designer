@@ -1,0 +1,252 @@
+/* Canvas scene. Sizes that must stay readable on screen use --upx (wall units per screen px),
+   which the Scene sets on .root on every zoom, so no layer re-renders when zooming. */
+
+.root {
+  --twine-shadow: rgba(52, 34, 14, 0.42);
+  --wall-edge: rgba(70, 52, 30, 0.14);
+  --wall-light: rgba(255, 255, 255, 0.5);
+  --wall-dark: rgba(80, 60, 30, 0.07);
+  --speck-a: rgba(120, 95, 60, 0.12);
+  --speck-b: rgba(255, 255, 255, 0.45);
+  --select: var(--accent-2);
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 120px;
+  overflow: hidden;
+  background: var(--bg);
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+  outline: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  .root {
+    --twine-shadow: rgba(0, 0, 0, 0.6);
+    --wall-edge: rgba(0, 0, 0, 0.5);
+    --wall-light: rgba(255, 240, 220, 0.05);
+    --wall-dark: rgba(0, 0, 0, 0.22);
+    --speck-a: rgba(0, 0, 0, 0.28);
+    --speck-b: rgba(255, 240, 220, 0.06);
+    --select: #7fb2d4;
+  }
+}
+
+.root[data-cursor='grab'] { cursor: grab; }
+.root[data-cursor='grabbing'] { cursor: grabbing; }
+.root[data-cursor='crosshair'] { cursor: crosshair; }
+.root[data-cursor='pointer'] { cursor: pointer; }
+.root[data-cursor='move'] { cursor: move; }
+.root[data-cursor='copy'] { cursor: copy; }
+
+.svg {
+  display: block;
+  transform-origin: 0 0;
+  will-change: transform;
+  width: 100%;
+  height: 100%;
+}
+
+/* ── wall ─────────────────────────────────────────── */
+.wallShadow { fill: rgba(40, 28, 14, 0.06); }
+.wall { fill: var(--wall); }
+.speckA { fill: var(--speck-a); }
+.speckB { fill: var(--speck-b); }
+.lightA { stop-color: var(--wall-light); }
+.lightB { stop-color: var(--wall-dark); }
+.lightMid { stop-color: rgba(128, 128, 128, 0); }
+.wallEdge {
+  fill: none;
+  stroke: var(--wall-edge);
+  stroke-width: calc(var(--upx) * 1px);
+}
+.gridLine {
+  fill: none;
+  stroke: var(--wall-grid);
+  stroke-width: calc(var(--upx) * 1px);
+}
+.tick {
+  stroke: var(--text-muted);
+  stroke-width: calc(var(--upx) * 1px);
+  opacity: 0.45;
+}
+.tickMajor { opacity: 0.7; }
+.rulerText {
+  fill: var(--text-muted);
+  font-family: var(--font);
+  font-size: calc(var(--upx) * 9.5px);
+  opacity: 0.85;
+  pointer-events: none;
+}
+
+/* ── twine ────────────────────────────────────────── */
+.strand {
+  --twe: max(calc(var(--tw) * 1px), calc(var(--upx) * var(--minpx, 2.1) * 1px));
+  fill: none;
+}
+.strand path {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.tShadow {
+  stroke: var(--twine-shadow);
+  stroke-width: calc(var(--twe) * 1.5);
+  opacity: 0.7;
+  transform: translate(calc(var(--twe) * 0.55), calc(var(--twe) * 1.1));
+}
+.tBase {
+  stroke: var(--c);
+  stroke-width: var(--twe);
+}
+.tCore {
+  stroke: var(--cd);
+  stroke-width: calc(var(--twe) * 0.34);
+  stroke-dasharray: calc(var(--twe) * 0.9) calc(var(--twe) * 1.5);
+  stroke-dashoffset: calc(var(--twe) * 0.2);
+  opacity: 0.55;
+}
+.strand path.tFibre {
+  stroke: var(--cf);
+  stroke-width: calc(var(--twe) * 0.42);
+  stroke-dasharray: calc(var(--twe) * 1.1) calc(var(--twe) * 1.3);
+  stroke-linecap: butt;
+  transform: translate(calc(var(--twe) * -0.12), calc(var(--twe) * -0.16));
+}
+.ghost { opacity: 0.14; }
+.ghost .tShadow { display: none; }
+
+/* ── halos (under the twine) ──────────────────────── */
+.halo {
+  fill: none;
+  stroke-linecap: round;
+  stroke-width: calc(var(--tw) * 1px + var(--upx) * var(--hw, 9) * 1px);
+  opacity: 0.38;
+}
+.haloDot { opacity: 0.32; }
+.haloDotScale { transform: scale(calc(var(--nr) + var(--upx) * var(--hr, 7))); }
+.glow {
+  fill: none;
+  stroke: var(--accent);
+  stroke-linecap: round;
+  stroke-width: calc(var(--tw) * 1px + var(--upx) * 12px);
+  opacity: 0.32;
+}
+.glowCore {
+  fill: none;
+  stroke: var(--accent);
+  stroke-linecap: round;
+  stroke-width: calc(var(--tw) * 1px + var(--upx) * 5px);
+  opacity: 0.5;
+}
+.selHalo {
+  fill: none;
+  stroke: var(--select);
+  stroke-linecap: round;
+  stroke-width: calc(var(--tw) * 1px + var(--upx) * 7px);
+  opacity: 0.55;
+}
+.hoverHalo {
+  fill: none;
+  stroke: var(--select);
+  stroke-linecap: round;
+  stroke-width: calc(var(--tw) * 1px + var(--upx) * 7px);
+  opacity: 0.25;
+}
+
+/* ── nails ────────────────────────────────────────── */
+.nailHead { transform: scale(calc(var(--nr) * var(--load, 1))); }
+.nailShadow { fill: rgba(30, 20, 10, 0.35); }
+.nailRim { fill: none; stroke: rgba(0, 0, 0, 0.35); stroke-width: 0.12; }
+.loadRing { fill: none; stroke-width: 0.35; }
+.label {
+  fill: var(--text);
+  font-family: var(--font);
+  font-weight: 600;
+  font-size: calc(var(--upx) * 10px);
+  paint-order: stroke;
+  stroke: var(--wall);
+  stroke-width: calc(var(--upx) * 3px);
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+.nailHit { fill: transparent; }
+
+/* ── pins ─────────────────────────────────────────── */
+.frame { fill: #fbf8f2; }
+.frameShadow { fill: rgba(30, 20, 10, 0.22); }
+.frameEdge { fill: none; stroke: rgba(60, 45, 30, 0.18); stroke-width: 0.03; }
+.frameSel { fill: none; stroke: var(--select); stroke-width: calc(var(--upx) * 2.5px); }
+.caption {
+  fill: rgba(60, 50, 40, 0.55);
+  font-family: var(--font-hand);
+  pointer-events: none;
+}
+
+/* ── interaction overlay ──────────────────────────── */
+.selRing {
+  fill: none;
+  stroke: var(--select);
+  stroke-width: 0.28;
+}
+.hoverRing {
+  fill: none;
+  stroke: var(--select);
+  stroke-width: 0.22;
+  opacity: 0.55;
+}
+.ringScale { transform: scale(calc(var(--nr) + var(--upx) * 4)); }
+.ghostNail { opacity: 0.5; }
+.preview {
+  fill: none;
+  stroke-linecap: round;
+  stroke-width: max(calc(var(--tw) * 1px), calc(var(--upx) * 1.6px));
+  stroke-dasharray: calc(var(--upx) * 6px) calc(var(--upx) * 5px);
+  opacity: 0.8;
+}
+.lasso {
+  fill: color-mix(in srgb, var(--select) 10%, transparent);
+  stroke: var(--select);
+  stroke-width: calc(var(--upx) * 1px);
+  stroke-dasharray: calc(var(--upx) * 4px) calc(var(--upx) * 3px);
+}
+.guide {
+  stroke: var(--accent);
+  stroke-width: calc(var(--upx) * 1px);
+  stroke-dasharray: calc(var(--upx) * 3px) calc(var(--upx) * 3px);
+  opacity: 0.7;
+}
+.needleScale { transform: scale(calc(var(--upx) * 1)); }
+.needleGlow { fill: var(--accent); opacity: 0.25; }
+.needle { fill: var(--accent); stroke: #fff; stroke-width: 1.5; }
+
+/* ── floating controls ────────────────────────────── */
+.fit {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  backdrop-filter: blur(6px);
+  box-shadow: var(--shadow);
+  color: var(--text-muted);
+  font-size: 12px;
+  cursor: pointer;
+}
+.fit:hover { color: var(--text); border-color: var(--text-muted); }
+.fit svg { width: 14px; height: 14px; }
+.zoomLabel {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  font-size: 11px;
+  color: var(--text-muted);
+  pointer-events: none;
+  opacity: 0.8;
+}
