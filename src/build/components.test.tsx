@@ -106,7 +106,7 @@ describe('CutList', () => {
       formatTwine(trianglePlan.totals.cutLengthByGroup[JUTE.id], 'in'),
     );
     expect(screen.getByTestId('nail-count').textContent).toBe('5 nails');
-    expect(screen.getByTestId('pin-count').textContent).toBe('4 mini clothespins');
+    expect(screen.getByTestId('pin-count').textContent).toBe('11 mini clothespins');
     expect(screen.getByText(/11 ft \(3\.7 yd\)/)).toBeTruthy();
   });
   it('totals for a two-run plan; pins fall back to placed pins', () => {

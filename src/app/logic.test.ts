@@ -48,13 +48,13 @@ describe('autoFillPins', () => {
   it('creates pins on eligible edges only, spread evenly inside the end clearance', () => {
     const report = analyze(resolved, opts);
     expect(report.photoSlots.level).toBeGreaterThan(1);
-    expect(report.photoSlots.steep).toBe(0);
+    expect(report.photoSlots.steep).toBeGreaterThan(0);
     expect(report.photoSlots.short).toBe(0);
 
     const pins = autoFillPins(resolved, report, opts);
     expect(pins).toHaveLength(report.stats.photoSlots);
-    expect(new Set(pins.map((p) => p.edgeId))).toEqual(new Set(['level']));
-    const ts = pins.map((p) => p.t);
+    expect(new Set(pins.map((p) => p.edgeId))).toEqual(new Set(['level', 'steep']));
+    const ts = pins.filter((p) => p.edgeId === 'level').map((p) => p.t);
     expect([...ts].sort((x, y) => x - y)).toEqual(ts);
     const L = Math.hypot(36, 2);
     for (const t of ts) {
@@ -77,7 +77,7 @@ describe('autoFillPins', () => {
     expect(report.edgeScore.level).toBeGreaterThan(report.edgeScore.tilted);
     const pins = autoFillPins(r2, report, opts);
     expect(pins[0].edgeId).toBe('level');
-    expect(pins[pins.length - 1].edgeId).toBe('tilted');
+    expect(pins[pins.length - 1].edgeId).not.toBe('level');
     expect(pins[0].photo?.dataUrl).toBe('data:x');
   });
 });

@@ -16,10 +16,15 @@ export function photoSlotsImpl(
 ): { slots: number; score: number } {
   const L = dist(a, b);
   const theta = chordAngleDeg(a, b);
-  const pitch = opts.photo.width + opts.photo.gap;
+  // Photos hang plumb from the pin, so neighbours clear each other sideways (level strands) or by
+  // height (steep strands): the along-twine pitch is whichever is tighter.
+  const rad = (theta * Math.PI) / 180;
+  const pw = opts.photo.width + opts.photo.gap;
+  const ph = opts.photo.height + opts.photo.gap;
+  const pitch = Math.min(pw / Math.max(Math.cos(rad), 1e-6), ph / Math.max(Math.sin(rad), 1e-6));
   const slots =
     theta <= opts.maxPhotoAngleDeg && pitch > 0 ? Math.max(0, Math.floor((L - 2 * opts.endClearance) / pitch)) : 0;
-  const score = slots > 0 ? clamp(opts.maxPhotoAngleDeg > 0 ? 1 - theta / opts.maxPhotoAngleDeg : 1, 0, 1) : 0;
+  const score = slots > 0 ? clamp(opts.maxPhotoAngleDeg > 0 ? 1 - (0.6 * theta) / opts.maxPhotoAngleDeg : 1, 0, 1) : 0;
   return { slots, score };
 }
 
@@ -156,7 +161,7 @@ export function analyzeImpl(resolved: ResolvedDesign, opts?: Partial<AnalyzeOpti
       id: 'no-photo-space',
       kind: 'no-photo-space',
       severity: 'info',
-      message: `No strand is long and level enough for a photo (needs about ${fmt(2 * o.endClearance + o.photo.width)} of twine within ${o.maxPhotoAngleDeg}° of horizontal).`,
+      message: `No strand is long enough for a photo (needs about ${fmt(2 * o.endClearance + Math.min(o.photo.width, o.photo.height))} of twine).`,
     });
   }
 

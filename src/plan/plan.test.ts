@@ -249,12 +249,17 @@ describe('analyze', () => {
   });
 
   it('photoSlots follows the formula', () => {
-    const o = { maxPhotoAngleDeg: 30, endClearance: 3, photo: { width: 4, height: 6, gap: 2 } };
+    const o = { maxPhotoAngleDeg: 90, endClearance: 3, photo: { width: 4, height: 6, gap: 2 } };
     expect(photoSlots({ x: 0, y: 0 }, { x: 30, y: 0 }, o)).toEqual({ slots: 4, score: 1 });
     const a15 = photoSlots({ x: 0, y: 0 }, { x: 40 * Math.cos(Math.PI / 12), y: 40 * Math.sin(Math.PI / 12) }, o);
     expect(a15.slots).toBe(5);
-    expect(a15.score).toBeCloseTo(0.5, 9);
-    expect(photoSlots({ x: 0, y: 0 }, { x: 0, y: 40 }, o)).toEqual({ slots: 0, score: 0 });
+    expect(a15.score).toBeCloseTo(1 - (0.6 * 15) / 90, 9);
+    // Vertical strands take photos too, spaced by photo height + gap.
+    const vert = photoSlots({ x: 0, y: 0 }, { x: 0, y: 40 }, o);
+    expect(vert.slots).toBe(4);
+    expect(vert.score).toBeCloseTo(0.4, 9);
+    // A cap still excludes steeper strands.
+    expect(photoSlots({ x: 0, y: 0 }, { x: 0, y: 40 }, { ...o, maxPhotoAngleDeg: 30 })).toEqual({ slots: 0, score: 0 });
     expect(photoSlots({ x: 0, y: 0 }, { x: 5, y: 0 }, o)).toEqual({ slots: 0, score: 0 });
   });
 
@@ -315,8 +320,8 @@ describe('analyze', () => {
     expect(new Set(report.issues.map((i) => i.id)).size).toBe(report.issues.length);
     for (const i of report.issues) expect(i.message.length).toBeGreaterThan(10);
 
-    // No photo space: only steep edges.
-    const steep = design([nail('a', 10, 5), nail('b', 12, 40)], [edge('e', 'a', 'b')]);
+    // No photo space: only very short edges.
+    const steep = design([nail('a', 10, 5), nail('b', 12, 10)], [edge('e', 'a', 'b')]);
     const r2 = analyze(steep);
     expect(r2.issues).toEqual([expect.objectContaining({ id: 'no-photo-space', kind: 'no-photo-space', severity: 'info' })]);
     expect(analyze(design([], [])).issues).toEqual([]);

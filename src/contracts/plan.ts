@@ -105,10 +105,10 @@ export interface Issue {
 
 /**
  * PHOTO SLOT FORMULA (per edge, using chord length L and chord angle θ from horizontal, 0..90°):
- *   slots = θ <= maxPhotoAngleDeg
- *     ? max(0, floor((L - 2 * endClearance) / (photo.width + photo.gap)))
- *     : 0
- *   edgeScore = slots > 0 ? clamp(1 - θ / maxPhotoAngleDeg, 0, 1) : 0
+ *   Photos hang plumb, so any angle up to maxPhotoAngleDeg (default 90 = any) takes photos:
+ *   pitch = min((photo.width + gap) / cos θ, (photo.height + gap) / sin θ)
+ *   slots = θ <= maxPhotoAngleDeg ? max(0, floor((L - 2 * endClearance) / pitch)) : 0
+ *   edgeScore = slots > 0 ? clamp(1 - 0.6 * θ / maxPhotoAngleDeg, 0, 1) : 0 (level strands preferred)
  */
 export interface Report {
   issues: Issue[];
@@ -135,7 +135,7 @@ export const DEFAULT_ANALYZE_OPTIONS_IN: AnalyzeOptions = {
   minNailSpacing: 0.75,
   maxNailLoad: 8,
   minEdgeLength: 1.5,
-  maxPhotoAngleDeg: 30,
+  maxPhotoAngleDeg: 90,
   endClearance: 3,
   photo: { width: 4, height: 6, gap: 2 },
 };

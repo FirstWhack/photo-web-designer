@@ -152,16 +152,17 @@ export const plusPlan: BuildPlan = {
 };
 
 /**
- * Triangle analysis with DEFAULT_ANALYZE_OPTIONS_IN (photo 4 wide, gap 2, clearance 3, max 30°):
- *  AB horizontal, L=30 → floor((30-6)/6) = 4 slots, score 1
- *  CA vertical → 0;  BC at 45° → 0
+ * Triangle analysis with DEFAULT_ANALYZE_OPTIONS_IN (photo 4×6, gap 2, clearance 3, any angle):
+ *  AB horizontal, L=30, pitch 6 → floor(24/6) = 4 slots, score 1
+ *  BC at 45°, L=30√2, pitch 6√2 → floor((30√2-6)/(6√2)) = 4 slots, score 0.7
+ *  CA vertical, L=30, pitch 8 → floor(24/8) = 3 slots, score 0.4
  */
 export const triangleReport: Report = {
   issues: [],
   nailLoad: { A: 2, B: 2, C: 2 },
-  edgeScore: { 'e-ab': 1, 'e-bc': 0, 'e-ca': 0 },
-  photoSlots: { 'e-ab': 4, 'e-bc': 0, 'e-ca': 0 },
-  stats: { nails: 3, edges: 3, twineLength: 60 + BC, photoSlots: 4, bbox: { minX: 10, minY: 10, maxX: 40, maxY: 40 } },
+  edgeScore: { 'e-ab': 1, 'e-bc': 0.7, 'e-ca': 0.4 },
+  photoSlots: { 'e-ab': 4, 'e-bc': 4, 'e-ca': 3 },
+  stats: { nails: 3, edges: 3, twineLength: 60 + BC, photoSlots: 11, bbox: { minX: 10, minY: 10, maxX: 40, maxY: 40 } },
 };
 
 /** A source Design: one live layer (generator 'spider-web') plus the baked triangle. */
