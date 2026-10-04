@@ -5,28 +5,32 @@
  */
 import type { Edge, ResolvedDesign, Vec2 } from '@/contracts/design';
 import type { AnalyzeOptions, BuildPlan, PhotoSpec, PlanOptions, Report } from '@/contracts/plan';
-import { notImplemented } from '@/lib/notImplemented';
+import { planBuildImpl } from './build';
+import { analyzeImpl, edgeLengthImpl, photoSlotsImpl } from './analyze';
 
 /** Minimum pieces of twine per group + continuous route through each (see contracts/plan.ts). */
-export function planBuild(_resolved: ResolvedDesign, _opts?: Partial<PlanOptions>): BuildPlan {
-  return notImplemented('plan.planBuild');
+export function planBuild(resolved: ResolvedDesign, opts?: Partial<PlanOptions>): BuildPlan {
+  return planBuildImpl(resolved, opts);
 }
 
 /** Practicality checks + photo capacity. Pass `plan` to also report hairpin issues. */
-export function analyze(_resolved: ResolvedDesign, _opts?: Partial<AnalyzeOptions>, _plan?: BuildPlan): Report {
-  return notImplemented('plan.analyze');
+export function analyze(resolved: ResolvedDesign, opts?: Partial<AnalyzeOptions>, plan?: BuildPlan): Report {
+  return analyzeImpl(resolved, opts, plan);
 }
 
 /** Sag-curve length of an edge. */
-export function edgeLength(_edge: Edge, _a: Vec2, _b: Vec2): number {
-  return notImplemented('plan.edgeLength');
+export function edgeLength(edge: Edge, a: Vec2, b: Vec2): number {
+  return edgeLengthImpl(edge, a, b);
 }
 
 /** Photo slots + suitability score for one edge (formula in contracts/plan.ts). */
 export function photoSlots(
-  _a: Vec2,
-  _b: Vec2,
-  _opts: Pick<AnalyzeOptions, 'maxPhotoAngleDeg' | 'endClearance'> & { photo: PhotoSpec },
+  a: Vec2,
+  b: Vec2,
+  opts: Pick<AnalyzeOptions, 'maxPhotoAngleDeg' | 'endClearance'> & { photo: PhotoSpec },
 ): { slots: number; score: number } {
-  return notImplemented('plan.photoSlots');
+  return photoSlotsImpl(a, b, opts);
 }
+
+export { closeNailPairs } from './analyze';
+export { wrapAt } from './build';
