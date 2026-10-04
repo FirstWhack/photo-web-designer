@@ -2,12 +2,28 @@
  * GENERATORS domain — public API. Owner: generators agent.
  * Pure, deterministic, no React.
  */
-import type { GeneratorRegistry } from '@/contracts/generator';
-import { notImplemented } from '@/lib/notImplemented';
+import type { Generator, GeneratorRegistry } from '@/contracts/generator';
+import { curveStitch } from './curveStitch';
+import { lattice } from './lattice';
+import { organic } from './organic';
+import { spiderWeb } from './spiderWeb';
+import { star } from './star';
+import { stringArt } from './stringArt';
+import { surprise } from './surprise';
+import { swag } from './swag';
+import { schemaDefaults } from './util';
+
+const ALL: Generator[] = [spiderWeb, stringArt, star, curveStitch, lattice, organic, swag];
+const BY_ID = new Map(ALL.map((g) => [g.id, g]));
 
 export const registry: GeneratorRegistry = {
-  list: () => [],
-  get: () => undefined,
-  defaults: () => ({}),
-  surprise: () => notImplemented('generators.registry.surprise'),
+  list: () => ALL.slice(),
+  get: (id) => BY_ID.get(id),
+  defaults: (id) => {
+    const g = BY_ID.get(id);
+    return g ? schemaDefaults(g.schema) : {};
+  },
+  surprise: (seed, wall) => surprise(seed, wall, (id) => BY_ID.get(id)),
 };
+
+export { curveStitch, lattice, organic, spiderWeb, star, stringArt, swag };
