@@ -5,7 +5,7 @@ import { formatLength } from '@/lib/units';
 import { GroupPicker } from './GroupPicker';
 import { Icon } from './icons';
 import { ParamPanel } from './ParamPanel';
-import { visibleParams } from './paramVisibility';
+import { usesSeed, visibleParams } from './paramVisibility';
 import {
   alignDelta,
   fillWallSize,
@@ -143,14 +143,16 @@ export function LayerInspector(props: LayerInspectorProps) {
         ) : (
           <Note tone="warn">Unknown pattern “{layer.generatorId}”. It can still be moved or deleted.</Note>
         )}
-        <Field label="Seed" hint="Same seed, same pattern. Roll for a fresh variation.">
-          <div className={s.seedRow}>
-            <NumberInput label="Seed" value={layer.seed} step={1} min={0} onChange={(v) => onUpdate({ seed: Math.round(v) })} />
-            <Button icon="dice" onClick={onReroll} title="New random seed">
-              Reroll
-            </Button>
-          </div>
-        </Field>
+        {usesSeed(layer.generatorId, layer.params, generator?.schema) && (
+          <Field label="Seed" hint="Same seed, same pattern. Roll for a fresh variation.">
+            <div className={s.seedRow}>
+              <NumberInput label="Seed" value={layer.seed} step={1} min={0} onChange={(v) => onUpdate({ seed: Math.round(v) })} />
+              <Button icon="dice" onClick={onReroll} title="New random seed">
+                Reroll
+              </Button>
+            </div>
+          </Field>
+        )}
       </Section>
 
       <Section title="Size on the wall" actions={<span className={s.sizeReadout}>{formatSize(size, units)}</span>}>

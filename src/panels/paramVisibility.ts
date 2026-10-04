@@ -20,6 +20,24 @@ const RULES: Record<string, Record<string, Rule>> = {
   },
 };
 
+/**
+ * Whether a layer's seed changes its output. Most generators are exact and ignore it; the rest
+ * only use it for some settings (spider web wobble, lattice broken strands, organic always).
+ */
+export function usesSeed(generatorId: string, values: ParamValues, schema: ParamSchema = []): boolean {
+  const get = (key: string) => (key in values ? values[key] : schema.find((d) => d.key === key)?.default);
+  switch (generatorId) {
+    case 'organic':
+      return true;
+    case 'spider-web':
+      return Number(get('irregularity') ?? 0) > 0;
+    case 'lattice':
+      return Number(get('removal') ?? 0) > 0;
+    default:
+      return false;
+  }
+}
+
 export function visibleParams(generatorId: string, schema: ParamSchema, values: ParamValues): ParamSchema {
   const rules = RULES[generatorId];
   if (!rules) return schema;

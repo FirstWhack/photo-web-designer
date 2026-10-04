@@ -23,7 +23,7 @@ export {
   type MenuItem,
 } from './ui';
 export { ParamPanel, type ParamPanelProps } from './ParamPanel';
-export { visibleParams } from './paramVisibility';
+export { usesSeed, visibleParams } from './paramVisibility';
 export { LayersPanel, type LayerActions } from './LayersPanel';
 export { LayerInspector } from './LayerInspector';
 export { GroupsPanel } from './GroupsPanel';
