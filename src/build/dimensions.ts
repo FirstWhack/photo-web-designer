@@ -55,7 +55,14 @@ export function segmentText(count: number, spacing: number, units: Units): { tex
   const sp = formatMeasure(spacing, units);
   if (count < 2) return { text: sp, short: [] };
   const total = formatMeasure(spacing * count, units);
-  return { text: `${count} EQ SP @ ${sp} = ${total}`, short: [`${count} EQ SP @ ${sp}`, `${count} EQ SP`] };
+  // The spacing is rounded for the tape, so mark it approximate when count × rounded ≠ total.
+  const exact = formatMeasure(Number.parseFloat(sp) ? spacing * count : 0, units) === formatMeasure(roundTape(spacing, units) * count, units);
+  const at = exact ? sp : `≈${sp}`;
+  return { text: `${count} EQ SP @ ${at} = ${total}`, short: [`${count} EQ SP @ ${at}`, `${count} EQ SP`] };
+}
+
+function roundTape(v: number, units: Units): number {
+  return units === 'cm' ? Math.round(v * 10) / 10 : Math.round(v * 8) / 8;
 }
 
 /**
