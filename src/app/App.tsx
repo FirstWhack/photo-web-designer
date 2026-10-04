@@ -7,7 +7,7 @@ import type { Overlay, SnapOptions } from '@/contracts/ui';
 import { defaultAnalyzeOptions } from '@/contracts/defaults';
 import { bbox } from '@/lib/geom';
 import { randomSeed } from '@/lib/rng';
-import { formatTwine } from '@/lib/units';
+import { formatLength, formatTwine } from '@/lib/units';
 import {
   createDesignStore,
   decodeShareLink,
@@ -46,6 +46,7 @@ import {
   WallDialog,
   cx,
   fillTransform,
+  normalizeMoves,
   photoSpec,
   toolHelp,
   wallLabel,
@@ -251,6 +252,22 @@ export function App({ store: injected, registry = defaultRegistry }: AppProps) {
 
   const starterId = registry.get('frame') ? 'frame' : 'spider-web';
   const starterLabel = registry.get('frame') ? 'Start with a rectangle frame' : 'Start with a spider web';
+
+  const normalizeNails = () => {
+    const st = store.getState();
+    const current = resolveDesign(st.design, registry);
+    const picked = new Set(st.selection.nails);
+    const pool = picked.size ? current.nails.filter((n) => picked.has(n.id)) : current.nails;
+    const { moves, collisions } = normalizeMoves(pool, snap.gridSize);
+    if (!moves.length) return say('Nails are already on the ' + formatLength(snap.gridSize, units) + ' grid');
+    actions.beginGesture();
+    for (const m of moves) actions.moveNails([m.id], { x: m.dx, y: m.dy });
+    actions.endGesture();
+    say(
+      'Moved ' + moves.length + ' nail' + (moves.length === 1 ? '' : 's') + ' onto the ' + formatLength(snap.gridSize, units) + ' grid' +
+        (collisions ? '. ' + collisions + ' now overlap another nail' : ''),
+    );
+  };
 
   const autoFill = () => {
     const current = resolveDesign(store.getState().design, registry);
@@ -495,7 +512,7 @@ export function App({ store: injected, registry = defaultRegistry }: AppProps) {
           </div>
         </Section>
         <Section title="View & snapping">
-          <ViewOptions snap={snap} onSnap={setSnap} labels={labels} onLabels={setLabels} overlay={overlay} onOverlay={setOverlay} units={units} />
+          <ViewOptions snap={snap} onSnap={setSnap} labels={labels} onLabels={setLabels} overlay={overlay} onOverlay={setOverlay} units={units} onNormalize={normalizeNails} selectedNails={selection.nails.length} />
         </Section>
         <Section title="Twine colours">
           <GroupsPanel groups={design.groups} activeGroupId={activeGroupId} actions={actions} usage={groupUsage} />

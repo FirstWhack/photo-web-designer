@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { alignDelta, contentBounds, fillTransform, fillWallSize, orient, overflow, presetSize, shapeOf, sizeOf, sizePresets, transformBounds, withSize, photoSpec } from './sizing';
+import { alignDelta, normalizeMoves, contentBounds, fillTransform, fillWallSize, orient, overflow, presetSize, shapeOf, sizeOf, sizePresets, transformBounds, withSize, photoSpec } from './sizing';
 import { coverPlacement } from './WallDialog';
 
 const wall = { width: 72, height: 48, units: 'in' as const };
@@ -65,5 +65,23 @@ describe('fillTransform', () => {
     expect(b.maxX).toBeLessThan(66.1);
     expect((b.minX + b.maxX) / 2).toBeCloseTo(36);
     expect((b.minY + b.maxY) / 2).toBeCloseTo(24);
+  });
+});
+
+describe('normalizeMoves', () => {
+  it('snaps to the step, skips aligned nails and counts collisions', () => {
+    const { moves, collisions } = normalizeMoves(
+      [
+        { id: 'a', x: 1.2, y: 2.9 },
+        { id: 'b', x: 3, y: 4 },
+        { id: 'c', x: 1.1, y: 3.1 },
+      ],
+      0.5,
+    );
+    expect(moves.map((m) => m.id)).toEqual(['a', 'c']);
+    expect(moves[0].dx).toBeCloseTo(-0.2);
+    expect(moves[0].dy).toBeCloseTo(0.1);
+    expect(collisions).toBe(1);
+    expect(normalizeMoves([{ id: 'a', x: 1.2, y: 3 }, { id: 'b', x: 3, y: 3 }], 1).collisions).toBe(0);
   });
 });

@@ -61,7 +61,12 @@ export function ViewOptions({
   overlay,
   onOverlay,
   units,
+  onNormalize,
+  selectedNails = 0,
 }: {
+  /** Snap every nail (or just the selected ones) onto the grid. */
+  onNormalize?: () => void;
+  selectedNails?: number;
   snap: SnapOptions;
   onSnap: (s: SnapOptions) => void;
   labels: boolean;
@@ -73,8 +78,22 @@ export function ViewOptions({
   return (
     <div className={s.stack}>
       <Toggle label="Snap to grid" checked={snap.grid} onChange={(grid) => onSnap({ ...snap, grid })} />
+      <Field label="Grid size">
+        <Chips>
+          {(units === 'cm' ? [1, 2.5, 5] : [0.25, 0.5, 1]).map((v) => (
+            <Chip key={v} pressed={snap.gridSize === v} onClick={() => onSnap({ ...snap, gridSize: v })}>
+              {formatLength(v, units)}
+            </Chip>
+          ))}
+        </Chips>
+      </Field>
+      {onNormalize && (
+        <Button icon="grid" onClick={onNormalize} title="Move nails onto the nearest grid points. Layers are baked into editable nails first.">
+          {selectedNails > 0 ? 'Normalize ' + selectedNails + ' selected to grid' : 'Normalize all nails to grid'}
+        </Button>
+      )}
       {snap.grid && (
-        <Field label="Grid size">
+        <Field label="Custom size">
           <div className={s.dimInput}>
             <NumberInput
               label="Grid size"

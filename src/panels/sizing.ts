@@ -147,6 +147,30 @@ export function fillTransform(t: LayerTransform, local: P[], wall: Pick<Wall, 'w
   return { ...cur, x: wall.width / 2 - (b.minX + b.maxX) / 2, y: wall.height / 2 - (b.minY + b.maxY) / 2 };
 }
 
+const snapTo = (v: number, step: number) => Math.round(v / step) * step;
+
+/** Moves that put each nail on the nearest multiple of `step` (wall origin = top-left). Skips nails already there. */
+export function normalizeMoves(
+  nails: { id: string; x: number; y: number }[],
+  step: number,
+): { moves: { id: string; dx: number; dy: number }[]; collisions: number } {
+  const moves: { id: string; dx: number; dy: number }[] = [];
+  const seen = new Set<string>();
+  let collisions = 0;
+  if (!(step > 0)) return { moves, collisions };
+  for (const n of nails) {
+    const x = snapTo(n.x, step);
+    const y = snapTo(n.y, step);
+    const key = Math.round(x / step) + ',' + Math.round(y / step);
+    if (seen.has(key)) collisions++;
+    seen.add(key);
+    const dx = x - n.x;
+    const dy = y - n.y;
+    if (Math.abs(dx) > 1e-9 || Math.abs(dy) > 1e-9) moves.push({ id: n.id, dx, dy });
+  }
+  return { moves, collisions };
+}
+
 export function formatSize(size: Size, units: Units): string {
   return `${formatLength(size.w, units)} × ${formatLength(size.h, units)}`;
 }
