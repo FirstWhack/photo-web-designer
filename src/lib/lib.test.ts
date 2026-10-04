@@ -13,7 +13,7 @@ describe('geom', () => {
     const a = { x: 0, y: 0 };
     const b = { x: 10, y: 0 };
     expect(sagLength(a, b, 1)).toBeGreaterThan(10);
-    expect(pointOnSag(a, b, 1, 0.5).y).toBeCloseTo(1.5);
+    expect(pointOnSag(a, b, 1, 0.5).y).toBeCloseTo(3);
   });
   it('turn sign: clockwise on screen is positive', () => {
     const t = turn({ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 10, y: 10 });

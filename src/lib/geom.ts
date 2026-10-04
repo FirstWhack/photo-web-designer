@@ -56,7 +56,7 @@ export function turn(prev: Vec2, at: Vec2, next: Vec2): { cross: number; angleDe
 // Modelled as a quadratic Bézier whose midpoint drops straight down by
 // depth = sag * MAX_SAG_RATIO * chordLength.
 
-export const MAX_SAG_RATIO = 0.15;
+export const MAX_SAG_RATIO = 0.3;
 
 export function sagDepth(a: Vec2, b: Vec2, sag: number): number {
   return clamp(sag, 0, 1) * MAX_SAG_RATIO * dist(a, b);
