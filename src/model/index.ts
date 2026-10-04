@@ -5,55 +5,35 @@
 import type { Design, Edge, Nail, NailId, ResolvedDesign } from '@/contracts/design';
 import type { GeneratorRegistry } from '@/contracts/generator';
 import type { DesignStore, DesignStoreState } from '@/contracts/actions';
-import { notImplemented } from '@/lib/notImplemented';
+import { createDesignStoreImpl, type CreateDesignStoreOptions } from './store';
+import { useDesignStore as useDesignStoreImpl } from './useDesignStore';
+import { resolveDetailed } from './resolve';
+import { mergeNails as mergeNailsImpl } from './merge';
 
-export interface CreateDesignStoreOptions {
-  registry: GeneratorRegistry;
-  /** Starting design. Default: autosaved design from storage, else `emptyDesign()`. */
-  initial?: Design;
-  /** localStorage key for autosave; null disables autosave. Default 'photo-web:autosave'. */
-  storageKey?: string | null;
-  /** Max undo steps. Default 200. */
-  historyLimit?: number;
-}
+export type { CreateDesignStoreOptions } from './store';
+export { DEFAULT_STORAGE_KEY, AUTOSAVE_DELAY_MS, bakeLayerInDesign, fallbackTransform } from './store';
+export { layerNailId, layerEdgeId, clearLayerCache } from './resolve';
+export { validateDesign, serializeDesign, deserializeDesign, encodeShareLink, decodeShareLink } from './serialize';
 
-export function createDesignStore(_opts: CreateDesignStoreOptions): DesignStore {
-  return notImplemented('model.createDesignStore');
+export function createDesignStore(opts: CreateDesignStoreOptions): DesignStore {
+  return createDesignStoreImpl(opts);
 }
 
 /** React hook: subscribe to a slice of the store (shallow-compared). */
-export function useDesignStore<T>(_store: DesignStore, _selector: (s: DesignStoreState) => T): T {
-  return notImplemented('model.useDesignStore');
+export function useDesignStore<T>(store: DesignStore, selector: (s: DesignStoreState) => T): T {
+  return useDesignStoreImpl(store, selector);
 }
 
 /** Evaluate layers + baked geometry into plain geometry. Must satisfy the RESOLVE GUARANTEES in contracts/design.ts. */
-export function resolveDesign(_design: Design, _registry: GeneratorRegistry): ResolvedDesign {
-  return notImplemented('model.resolveDesign');
+export function resolveDesign(design: Design, registry: GeneratorRegistry): ResolvedDesign {
+  return resolveDetailed(design, registry).resolved;
 }
 
 /** Merge nails within `tolerance`; first occurrence survives. Rewrites edges, drops self-loops & duplicates. */
 export function mergeNails(
-  _nails: Nail[],
-  _edges: Edge[],
-  _tolerance: number,
+  nails: Nail[],
+  edges: Edge[],
+  tolerance: number,
 ): { nails: Nail[]; edges: Edge[]; alias: Record<NailId, NailId> } {
-  return notImplemented('model.mergeNails');
-}
-
-export function serializeDesign(_design: Design): string {
-  return notImplemented('model.serializeDesign');
-}
-
-/** Throws a descriptive Error on invalid input. */
-export function deserializeDesign(_json: string): Design {
-  return notImplemented('model.deserializeDesign');
-}
-
-/** Returns a URL hash fragment (without '#') encoding the design. */
-export function encodeShareLink(_design: Design): string {
-  return notImplemented('model.encodeShareLink');
-}
-
-export function decodeShareLink(_hash: string): Design | null {
-  return notImplemented('model.decodeShareLink');
+  return mergeNailsImpl(nails, edges, tolerance);
 }
