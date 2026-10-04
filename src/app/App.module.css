@@ -314,7 +314,7 @@
   .toolDock { top: auto; left: 50%; bottom: 92px; transform: translateX(-50%); }
   .statsDock > * { font-size: var(--text-xs); gap: 4px; padding: 5px 6px 5px 10px; }
   .statsDock { left: 8px; right: 64px; bottom: 8px; }
-  .historyBar { height: 76px; }
+  .historyInDrawer { height: 84px; margin: 0 -12px; }
 
   .buildContent { padding: 16px 12px 24px; }
   .buildMain > [role='tablist'] { padding: 0 4px; }

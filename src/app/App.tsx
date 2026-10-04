@@ -465,6 +465,13 @@ export function App({ store: injected, registry = defaultRegistry }: AppProps) {
           />
         </Section>
         {!empty && addSection}
+        {narrow && (
+          <Section title="Variations">
+            <div className={s.historyInDrawer}>
+              <HistoryStrip items={historyItems} currentId={currentVarId} onPick={pickVariation} onKeep={keep} canKeep={!empty} />
+            </div>
+          </Section>
+        )}
         <Section title="Twine colours">
           <GroupsPanel groups={design.groups} activeGroupId={activeGroupId} actions={actions} usage={groupUsage} />
         </Section>
@@ -727,7 +734,7 @@ export function App({ store: injected, registry = defaultRegistry }: AppProps) {
               )}
               {!playing && <div className={s.statsDock}>{stats}</div>}
             </div>
-            {mode === 'explore' && (
+            {mode === 'explore' && !narrow && (
               <div className={s.historyBar}>
                 <HistoryStrip items={historyItems} currentId={currentVarId} onPick={pickVariation} onKeep={keep} canKeep={!empty} />
               </div>
