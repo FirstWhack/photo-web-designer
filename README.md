@@ -15,7 +15,7 @@ The hard part of a photo web isn't hanging photos, it's the string pattern: wher
 1. **Set up your wall.** Enter its real size (inches or cm), or pick a common space. Optionally add a photo of the wall to see the web in place.
 2. **Explore.** Add patterns from the left (spider web, string art, star, lattice, swag garland and more), stack them, and drag the sliders. Hit **Surprise me** for a random design, and **Keep** the ones you like.
 3. **Refine.** Move nails, add or connect them by hand, and bake a pattern into editable nails. Snap nails to a grid (e.g. every half inch), and check the **Issues** overlay for nails too close together, overloaded, or strands too steep for photos.
-4. **Build.** Get a dimensioned drawing (PDF or PNG), a cut and shopping list, a nail coordinate table, a 1:1 paper template to tape to the wall, a guided nail-by-nail placement mode (measured from one datum corner, with optional distance checks), and a guided stringing walkthrough.
+4. **Build.** Get a dimensioned drawing (PDF or PNG), a cut and shopping list, a nail coordinate table, a 1:1 paper template to tape to the wall, a **Place nails** guide, and a **String twine** walkthrough.
 
 Your design saves in your browser automatically. **Copy share link** in the menu sends it to someone else.
 
@@ -27,7 +27,13 @@ This is what you take to the wall: a scaled, dimensioned drawing with every nail
 
 [![Example build drawing](docs/example-plan.png)](docs/example-plan.pdf)
 
-It works on phones too, so you can open the build steps next to the wall.
+## Placing the nails
+
+Most mistakes happen when measuring nail to nail, because every slip carries into the next one. **Place nails** has you measure every mark from one corner of the wall (the datum), one nail at a time: "9" across, 6" down". Every ten nails it suggests a distance check between two marked nails, so you catch a drifting mark before you drive anything. Checks are optional but recommended.
+
+![Place nails on a phone](docs/place-nails.png)
+
+It works on phones, so you can bring the guides to the wall.
 
 ## What you get
 
