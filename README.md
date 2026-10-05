@@ -21,6 +21,12 @@ Your design saves in your browser automatically. **Copy share link** in the menu
 
 ![A spider web pattern](docs/spider-web.png)
 
+## The build plan
+
+This is what you take to the wall: a scaled, dimensioned drawing with every nail numbered and located, each piece of twine and its cut length, a materials list and build notes. [Open the full PDF](docs/example-plan.pdf).
+
+[![Example build drawing](docs/example-plan.png)](docs/example-plan.pdf)
+
 It works on phones too, so you can open the build steps next to the wall.
 
 ## What you get
