@@ -290,7 +290,7 @@ function LayoutInner({
               {results.filter((r) => r === 'skipped').length} skipped.{' '}
             </>
           )}
-          Nail through your marks, then switch to the Step-by-step tab to string the twine.
+          Nail through your marks, then switch to the String twine tab.
         </p>
       </>
     );

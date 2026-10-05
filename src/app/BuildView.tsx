@@ -147,17 +147,17 @@ export function BuildView({
           tabs={[
             { value: 'drawing', label: 'Drawing', icon: 'frame' },
             { value: 'cut', label: 'Cut & shop', icon: 'scissors' },
-            { value: 'mark', label: 'Mark nails', icon: 'nail' },
             { value: 'coords', label: 'Nail positions', icon: 'ruler' },
             { value: 'template', label: 'Paper template (1:1)', icon: 'printer' },
-            { value: 'walk', label: 'Step-by-step (optional)', icon: 'steps' },
+            { value: 'mark', label: 'Place nails (guided)', icon: 'nail' },
+            { value: 'walk', label: 'String twine (guided)', icon: 'steps' },
           ]}
         />
         <div className={s.buildContent}>
           {empty ? (
             <div className={s.buildEmpty}>
               <Icon name="nail" size={28} />
-              <p>Nothing to build yet. Design a web in Explore or Refine, then come back for step-by-step instructions.</p>
+              <p>Nothing to build yet. Design a web in Explore or Refine, then come back for nail placement and stringing instructions.</p>
             </div>
           ) : tab === 'drawing' ? (
             <div className={s.drawingTab}>
@@ -186,9 +186,6 @@ export function BuildView({
                 </Button>
                 <Button icon="download" onClick={downloadPng} disabled={busy}>
                   Download PNG
-                </Button>
-                <Button icon="ruler" onClick={() => onTab('mark')}>
-                  Mark nails on the wall
                 </Button>
               </div>
               {error && <Note tone="warn">{error}</Note>}

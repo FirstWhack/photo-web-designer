@@ -15,7 +15,7 @@ The hard part of a photo web isn't hanging photos, it's the string pattern: wher
 1. **Set up your wall.** Enter its real size (inches or cm), or pick a common space. Optionally add a photo of the wall to see the web in place.
 2. **Explore.** Add patterns from the left (spider web, string art, star, lattice, swag garland and more), stack them, and drag the sliders. Hit **Surprise me** for a random design, and **Keep** the ones you like.
 3. **Refine.** Move nails, add or connect them by hand, and bake a pattern into editable nails. Snap nails to a grid (e.g. every half inch), and check the **Issues** overlay for nails too close together, overloaded, or strands too steep for photos.
-4. **Build.** Get a dimensioned drawing (PDF or PNG), a cut and shopping list, a nail coordinate table, a 1:1 paper template to tape to the wall, and optional step-by-step stringing instructions.
+4. **Build.** Get a dimensioned drawing (PDF or PNG), a cut and shopping list, a nail coordinate table, a 1:1 paper template to tape to the wall, a guided nail-by-nail placement mode (measured from one datum corner, with optional distance checks), and a guided stringing walkthrough.
 
 Your design saves in your browser automatically. **Copy share link** in the menu sends it to someone else.
 
