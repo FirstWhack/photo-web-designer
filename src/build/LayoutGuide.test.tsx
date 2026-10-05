@@ -28,7 +28,10 @@ describe('LayoutGuide', () => {
     fireEvent.change(screen.getByLabelText('Measured distance'), { target: { value: '43' } });
     expect(screen.getByRole('status').textContent).toMatch(/Off by/);
     fireEvent.change(screen.getByLabelText('Measured distance'), { target: { value: '42 7/16' } });
-    expect(screen.getByRole('status').textContent).toMatch(/Matches/);
+    expect(screen.getByRole('status').textContent).toBe('Matches the plan.');
+    fireEvent.change(screen.getByLabelText('Measured distance'), { target: { value: '42 1/2' } });
+    expect(screen.getByRole('status').textContent).toBe('Close enough: 1/16" long, within the 1/8" allowed.');
+    fireEvent.change(screen.getByLabelText('Measured distance'), { target: { value: '42 7/16' } });
     click(/continue/i);
     expect(screen.getByTestId('summary').textContent).toBe('3 of 3 nails marked');
   });

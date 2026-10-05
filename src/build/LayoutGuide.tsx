@@ -237,7 +237,9 @@ function LayoutInner({
         {result && (
           <div className={result.ok ? ls.checkOk : styles.chipWarn} role="status">
             {result.ok
-              ? `Matches (off by ${formatLength(Math.abs(result.diff), units)}).`
+              ? /^0(\.0)?( cm|")$/.test(formatLength(Math.abs(result.diff), units))
+                ? 'Matches the plan.'
+                : `Close enough: ${formatLength(Math.abs(result.diff), units)} ${result.diff > 0 ? 'long' : 'short'}, within the ${formatLength(tol, units)} allowed.`
               : `Off by ${formatLength(Math.abs(result.diff), units)}. Re-measure #${item.a.label} and #${item.b.label} from the ${words.corner} corner. If both are right, check the wall really is ${formatLength(wall.width, units)} × ${formatLength(wall.height, units)}; if not, fix it in Wall setup.`}
           </div>
         )}
