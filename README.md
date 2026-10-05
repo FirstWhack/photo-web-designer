@@ -4,9 +4,7 @@ Design a **photo web**: nails on a wall, twine strung between them, photos cloth
 
 **Use it:** <http://photo-web.south.solutions>
 
-[![Watch the walkthrough: design, refine, normalize, animated stringing, guided nailing with checks, guided stringing](docs/demo-poster.png)](docs/demo.mp4)
-
-**[Watch the walkthrough](docs/demo.mp4)** (click to play)
+https://github.com/user-attachments/assets/ba8547d4-793b-4493-825e-7072d7208ac0
 
 ![A string-art circle over a rectangle frame](docs/cardioid.png)
 
