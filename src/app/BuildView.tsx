@@ -10,6 +10,7 @@ import {
   Walkthrough,
   exportPlanPdf,
   exportTemplatePdf,
+  svgToPng,
   templateLayout,
   walkthroughSignature,
   type PlanPaper,
@@ -117,6 +118,20 @@ export function BuildView({
     }
   };
 
+  const downloadPng = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      const sheet = document.querySelector<SVGSVGElement>('[data-testid="plan-sheet"] svg');
+      if (!sheet) throw new Error('Nothing to export yet');
+      downloadBlob(await svgToPng(sheet), `${slug(designName)}-drawing.png`);
+    } catch (e) {
+      setError((e as Error).message || 'Could not build the PNG');
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const empty = plan.runs.length === 0 && resolved.nails.length === 0;
   // The drawing already shows the whole design; give it the full width.
   const sceneShown = showScene && tab !== 'drawing';
@@ -166,6 +181,9 @@ export function BuildView({
                 </Field>
                 <Button variant="primary" icon="download" onClick={downloadDrawing} disabled={busy}>
                   {busy ? 'Building PDF…' : 'Download drawing PDF'}
+                </Button>
+                <Button icon="download" onClick={downloadPng} disabled={busy}>
+                  Download PNG
                 </Button>
               </div>
               {error && <Note tone="warn">{error}</Note>}
