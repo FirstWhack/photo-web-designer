@@ -55,9 +55,14 @@ describe('LayoutGuide', () => {
     expect(screen.getByText(/Skipped: #1/)).toBeTruthy();
   });
 
-  it('warns when the measured wall does not match the setup', () => {
+  it('does not ask for the wall size up front, but reminds you of it when a check fails', () => {
     render(<LayoutGuide resolved={triangle} origin="top-left" />);
-    fireEvent.change(screen.getByLabelText(/^Width/), { target: { value: '70' } });
-    expect(screen.getByRole('note').textContent).toMatch(/width is 70"/);
+    expect(screen.queryByLabelText(/^Width/)).toBeNull();
+    click(/start marking/i);
+    click(/marked/i);
+    click(/marked/i);
+    click(/marked/i);
+    fireEvent.change(screen.getByLabelText('Measured distance'), { target: { value: '50' } });
+    expect(screen.getByRole('status').textContent).toMatch(/72" × 48"/);
   });
 });

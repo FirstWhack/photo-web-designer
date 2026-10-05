@@ -95,8 +95,6 @@ function LayoutInner({
   const [index, setIndex] = useState(() => Math.max(0, Math.min(last, saved?.index ?? 0)));
   const [skipped, setSkipped] = useState<Set<string>>(() => new Set(saved?.skipped ?? []));
   const [inputs, setInputs] = useState<Record<number, string>>(() => saved?.inputs ?? {});
-  const [wallW, setWallW] = useState('');
-  const [wallH, setWallH] = useState('');
 
   useEffect(() => write(storageKey, { sig, index, skipped: [...skipped], inputs } satisfies Saved), [storageKey, sig, index, skipped, inputs]);
 
@@ -168,10 +166,6 @@ function LayoutInner({
 
   let card;
   if (index === 0) {
-    const dw = parseLength(wallW);
-    const dh = parseLength(wallH);
-    const offW = dw != null && Math.abs(dw - wall.width) > tol;
-    const offH = dh != null && Math.abs(dh - wall.height) > tol;
     card = (
       <>
         <div className={styles.cardKicker}>Before you start</div>
@@ -194,26 +188,6 @@ function LayoutInner({
             </button>
           ))}
         </fieldset>
-        <div className={ls.set}>
-          <span className={ls.legend}>
-            Recommended: check your wall is {formatLength(wall.width, units)} × {formatLength(wall.height, units)}
-          </span>
-          <label className={ls.field}>
-            Width
-            <input value={wallW} onChange={(e) => setWallW(e.target.value)} inputMode="decimal" placeholder={formatLength(wall.width, units)} />
-          </label>
-          <label className={ls.field}>
-            Height
-            <input value={wallH} onChange={(e) => setWallH(e.target.value)} inputMode="decimal" placeholder={formatLength(wall.height, units)} />
-          </label>
-        </div>
-        {(offW || offH) && (
-          <div className={styles.chipWarn} role="note">
-            Your wall doesn&rsquo;t match the setup ({offW && `width is ${formatLength(dw!, units)}`}
-            {offW && offH && ', '}
-            {offH && `height is ${formatLength(dh!, units)}`}). Fix it in Wall setup before marking, or every mark will be off.
-          </div>
-        )}
       </>
     );
   } else if (item?.kind === 'nail') {
@@ -264,7 +238,7 @@ function LayoutInner({
           <div className={result.ok ? ls.checkOk : styles.chipWarn} role="status">
             {result.ok
               ? `Matches (off by ${formatLength(Math.abs(result.diff), units)}).`
-              : `Off by ${formatLength(Math.abs(result.diff), units)}. Re-measure #${item.a.label} and #${item.b.label} from the ${words.corner} corner before going on.`}
+              : `Off by ${formatLength(Math.abs(result.diff), units)}. Re-measure #${item.a.label} and #${item.b.label} from the ${words.corner} corner. If both are right, check the wall really is ${formatLength(wall.width, units)} × ${formatLength(wall.height, units)}; if not, fix it in Wall setup.`}
           </div>
         )}
       </>
