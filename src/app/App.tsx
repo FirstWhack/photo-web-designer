@@ -103,7 +103,7 @@ export function App({ store: injected, registry = defaultRegistry }: AppProps) {
   const [buildTab, setBuildTab] = useState<BuildTab>('drawing');
   const [selectedLayerId, setSelectedLayerId] = useState<LayerId | null>(null);
   const [drawer, setDrawer] = useState<'left' | 'right' | null>(null);
-  const [wallOpen, setWallOpen] = useState<false | 'setup' | 'onboarding'>(() => (isEmptyDesign(store.getState().design) && !wallOnboarded() ? 'onboarding' : false));
+  const [wallOpen, setWallOpen] = useState<false | 'setup' | 'onboarding'>(() => (isEmptyDesign(store.getState().design) && !wallOnboarded() && location.hash.length < 8 ? 'onboarding' : false));
   const [toast, setToast] = useState<string | null>(null);
   const narrow = useMediaQuery('(max-width: 899px)');
   const wideBuild = useMediaQuery('(min-width: 1100px)');
