@@ -78,7 +78,7 @@ describe('App', { timeout: 30_000 }, () => {
     await act(async () => fireEvent.click(surpriseButton()));
     await act(async () => fireEvent.click(screen.getByRole('tab', { name: 'Build' })));
     const tabs = screen.getAllByRole('tab').filter((t) => t.closest('[aria-label="Build guides"]'));
-    expect(tabs.map((t) => t.textContent)).toEqual(['Drawing', 'Cut & shop', 'Nail positions', 'Paper template (1:1)', 'Step-by-step (optional)']);
+    expect(tabs.map((t) => t.textContent)).toEqual(['Drawing', 'Cut & shop', 'Mark nails', 'Nail positions', 'Paper template (1:1)', 'Step-by-step (optional)']);
     expect(screen.getByRole('tab', { name: 'Drawing' }).getAttribute('aria-selected')).toBe('true');
     expect(screen.getByTestId('plan-sheet')).toBeTruthy();
     expect(screen.getByRole('button', { name: /Download drawing PDF/ })).toBeTruthy();

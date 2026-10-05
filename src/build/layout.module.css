@@ -1,0 +1,86 @@
+/* Guided layout: pieces that build.module.css doesn't already cover. */
+.set {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 14px 0 0;
+  padding: 0;
+  border: 0;
+}
+.legend {
+  flex: 1 0 100%;
+  padding: 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.pill {
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 14px;
+}
+.pillOn {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.field input {
+  width: 9em;
+  min-height: 44px;
+  font-size: 18px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+}
+.readout {
+  display: grid;
+  gap: 8px;
+  margin: 10px 0 4px;
+}
+.readoutVal {
+  display: block;
+  font-size: clamp(34px, 10vw, 52px);
+  font-weight: 700;
+  line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+}
+.readoutAxis {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+.checkOk {
+  margin-top: 10px;
+  color: var(--ok);
+  font-weight: 600;
+}
+.guide line {
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+}
+.datum {
+  fill: var(--accent);
+}
+.nailTodo {
+  fill: var(--text-muted);
+  opacity: 0.55;
+}
+.nailDone {
+  fill: var(--ok);
+}
+.nailNow {
+  fill: var(--accent);
+}

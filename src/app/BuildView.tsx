@@ -5,6 +5,7 @@ import type { MeasureOrigin, TemplatePdfOptions } from '@/contracts/ui';
 import {
   CoordTable,
   CutList,
+  LayoutGuide,
   PAPER_LABEL,
   PlanSheet,
   Walkthrough,
@@ -20,7 +21,7 @@ import { Button, Field, Note, Segmented, Tabs, Icon } from '@/panels';
 import { downloadBlob, hashString, slug, walkHighlight, walkScreens } from './util';
 import s from './App.module.css';
 
-export type BuildTab = 'drawing' | 'cut' | 'coords' | 'template' | 'walk';
+export type BuildTab = 'drawing' | 'cut' | 'mark' | 'coords' | 'template' | 'walk';
 
 const DRAW_PAPERS: PlanPaper[] = ['tabloid', 'a3', 'letter', 'a4'];
 const ZOOMS = ['1', '1.5', '2', '3'] as const;
@@ -146,6 +147,7 @@ export function BuildView({
           tabs={[
             { value: 'drawing', label: 'Drawing', icon: 'frame' },
             { value: 'cut', label: 'Cut & shop', icon: 'scissors' },
+            { value: 'mark', label: 'Mark nails', icon: 'nail' },
             { value: 'coords', label: 'Nail positions', icon: 'ruler' },
             { value: 'template', label: 'Paper template (1:1)', icon: 'printer' },
             { value: 'walk', label: 'Step-by-step (optional)', icon: 'steps' },
@@ -185,6 +187,9 @@ export function BuildView({
                 <Button icon="download" onClick={downloadPng} disabled={busy}>
                   Download PNG
                 </Button>
+                <Button icon="ruler" onClick={() => onTab('mark')}>
+                  Mark nails on the wall
+                </Button>
               </div>
               {error && <Note tone="warn">{error}</Note>}
               <div className={s.drawingScroll} data-testid="drawing-scroll">
@@ -195,6 +200,8 @@ export function BuildView({
             </div>
           ) : tab === 'walk' ? (
             <Walkthrough resolved={resolved} plan={plan} storageKey={storageKey} />
+          ) : tab === 'mark' ? (
+            <LayoutGuide resolved={resolved} origin={origin} storageKey={`photo-web:mark:${createdAt}`} />
           ) : tab === 'cut' ? (
             <CutList resolved={resolved} plan={plan} report={report} />
           ) : tab === 'coords' ? (

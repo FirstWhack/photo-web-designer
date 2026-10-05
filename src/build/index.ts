@@ -6,6 +6,8 @@ export { Walkthrough } from './Walkthrough';
 export { planSignature, walkthroughSignature } from './walk';
 export { CutList } from './CutList';
 export { CoordTable } from './CoordTable';
+/** Guided nail marking: one nail at a time, always measured from the datum corner. */
+export { LayoutGuide, type LayoutGuideProps } from './LayoutGuide';
 /** 1:1-scale nail template, tiled across pages with registration marks. */
 export { exportTemplatePdf, templateLayout } from './pdf';
 export { svgToPng } from './png';
